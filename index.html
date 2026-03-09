@@ -3316,9 +3316,41 @@ function generateSpell() {
     timestamp: new Date().toISOString()
   };
   
-  // Base64エンコード
+ function generateSpell() {
+  if (selectedItems.length === 0) {
+    alert('選択した品目がありません。');
+    return;
+  }
+  
+  // 最小限のデータのみ保存
+  const spellData = {
+    v: '1', // version
+    s: currentSalesPerson || '', // salesPerson
+    h: elements.homeNameInput?.value || '', // homeName
+    c: elements.contractorNameInput?.value || '', // contractorName
+    r: elements.remarksInput?.value || '', // remarks
+    b: burdenRate, // burdenRate
+    i: selectedItems.map(item => ({
+      n: item.name, // name
+      p: item.points, // points
+      q: item.quantity, // quantity
+      h: item.isHalfMonth ? 1 : 0, // isHalfMonth (true=1, false=0)
+      c: item.category || '', // category
+      t: item.taisCode || '' // taisCode
+    }))
+  };
+  
+  // JSON → Base64エンコード
   const jsonStr = JSON.stringify(spellData);
   const spell = btoa(unescape(encodeURIComponent(jsonStr)));
+  
+  // 表示
+  const output = document.getElementById('spellOutput');
+  const copyBtn = document.getElementById('copySpellBtn');
+  output.value = spell;
+  output.style.display = 'block';
+  copyBtn.style.display = 'block';
+}
   
   // 表示
   const output = document.getElementById('spellOutput');
@@ -3342,9 +3374,17 @@ function restoreFromSpell() {
     const jsonStr = decodeURIComponent(escape(atob(spell)));
     const data = JSON.parse(jsonStr);
     
-    // データを復元
-    selectedItems = data.items || [];
-    burdenRate = data.burdenRate || 1;
+    // 短縮形式から元のデータに復元
+    selectedItems = (data.i || []).map(item => ({
+      name: item.n,
+      points: item.p,
+      quantity: item.q,
+      isHalfMonth: item.h === 1,
+      category: item.c || '',
+      taisCode: item.t || ''
+    }));
+    
+    burdenRate = data.b || 1;
     
     // 負担割合ボタンを更新
     document.querySelectorAll('.burden-btn').forEach(btn => {
@@ -3364,9 +3404,9 @@ function restoreFromSpell() {
       const contractorInput = document.getElementById('contractorNameInput');
       const remarksInput = document.getElementById('remarksInput');
       
-      if (homeInput) homeInput.value = data.homeName || '';
-      if (contractorInput) contractorInput.value = data.contractorName || '';
-      if (remarksInput) remarksInput.value = data.remarks || '';
+      if (homeInput) homeInput.value = data.h || '';
+      if (contractorInput) contractorInput.value = data.c || '';
+      if (remarksInput) remarksInput.value = data.r || '';
     }, 100);
     
     // 利用者モードに切り替え
