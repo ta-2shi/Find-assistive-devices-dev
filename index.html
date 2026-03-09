@@ -3271,6 +3271,103 @@ function restoreFromHistory(id) {
 
 window.restoreFromHistory = restoreFromHistory;
 
+window.restoreFromHistory = restoreFromHistory;
+
+// 復活の呪文機能
+function generateSpell() {
+  if (selectedItems.length === 0) {
+    alert('選択した品目がありません。');
+    return;
+  }
+  
+  const spellData = {
+    version: '1.0',
+    salesPerson: currentSalesPerson || '未設定',
+    homeName: elements.homeNameInput?.value || '',
+    contractorName: elements.contractorNameInput?.value || '',
+    remarks: elements.remarksInput?.value || '',
+    burdenRate: burdenRate,
+    items: selectedItems,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Base64エンコード
+  const jsonStr = JSON.stringify(spellData);
+  const spell = btoa(unescape(encodeURIComponent(jsonStr)));
+  
+  // 表示
+  const output = document.getElementById('spellOutput');
+  const copyBtn = document.getElementById('copySpellBtn');
+  output.value = spell;
+  output.style.display = 'block';
+  copyBtn.style.display = 'block';
+}
+
+function restoreFromSpell() {
+  const input = document.getElementById('spellInput');
+  const spell = input.value.trim();
+  
+  if (!spell) {
+    alert('呪文を入力してください。');
+    return;
+  }
+  
+  try {
+    // Base64デコード
+    const jsonStr = decodeURIComponent(escape(atob(spell)));
+    const data = JSON.parse(jsonStr);
+    
+    // データを復元
+    selectedItems = data.items || [];
+    burdenRate = data.burdenRate || 1;
+    
+    // 負担割合ボタンを更新
+    document.querySelectorAll('.burden-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (parseFloat(btn.dataset.rate) === burdenRate) {
+        btn.classList.add('active');
+      }
+    });
+    
+    updateCalculator();
+    updateMobileCount();
+    saveSelectedItems();
+    
+    // 入力欄を復元
+    setTimeout(() => {
+      const homeInput = document.getElementById('homeNameInput');
+      const contractorInput = document.getElementById('contractorNameInput');
+      const remarksInput = document.getElementById('remarksInput');
+      
+      if (homeInput) homeInput.value = data.homeName || '';
+      if (contractorInput) contractorInput.value = data.contractorName || '';
+      if (remarksInput) remarksInput.value = data.remarks || '';
+    }, 100);
+    
+    // 利用者モードに切り替え
+    document.getElementById('userMode').click();
+    
+    alert('呪文から復元しました！');
+    
+    // 入力欄をクリア
+    input.value = '';
+    
+  } catch (error) {
+    alert('呪文が無効です。正しい呪文を入力してください。');
+    console.error('復元エラー:', error);
+  }
+}
+
+// ボタンのイベントリスナー
+document.getElementById('generateSpellBtn').addEventListener('click', generateSpell);
+document.getElementById('copySpellBtn').addEventListener('click', () => {
+  const output = document.getElementById('spellOutput');
+  output.select();
+  document.execCommand('copy');
+  alert('呪文をコピーしました！');
+});
+document.getElementById('restoreSpellBtn').addEventListener('click', restoreFromSpell);
+
 // 担当者管理
 let currentSalesPerson = localStorage.getItem('salesPerson') || '';
 
