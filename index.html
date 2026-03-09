@@ -1910,8 +1910,9 @@ function switchMode(admin) {
   elements.adminModeBtn.classList.toggle('active', admin);
   elements.adminPanel.classList.toggle('active', admin);
   
-  // 履歴セクションを非表示
+  // 履歴セクションと復活の呪文セクションを非表示
   document.getElementById('historySection').style.display = 'none';
+  document.getElementById('spellSection').style.display = 'none';
   
   // 検索窓とお気に入りは常に表示
   document.querySelector('.search-container').style.display = 'block';
