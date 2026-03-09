@@ -1876,8 +1876,32 @@ document.getElementById('historyMode').addEventListener('click', () => {
   // 履歴セクションを表示
   document.getElementById('historySection').style.display = 'block';
   
-  // 履歴を読み込み
+// 履歴を読み込み
   loadHistory();
+});
+
+// 復活の呪文ボタン
+document.getElementById('spellMode').addEventListener('click', () => {
+  // 全モードボタンを非アクティブに
+  document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+  // 復活の呪文ボタンをアクティブに
+  document.getElementById('spellMode').classList.add('active');
+  
+  // 全セクションを非表示
+  elements.adminPanel.classList.remove('active');
+  document.querySelector('.search-container').style.display = 'none';
+  document.querySelector('.favorite-section').style.display = 'none';
+  document.getElementById('searchResults').style.display = 'none';
+  document.querySelector('.calculator').style.display = 'none';
+  document.getElementById('historySection').style.display = 'none';
+  
+  // モバイルの「計算結果を表示」ボタンを非表示
+  if (elements.toggleCalculatorBtn) {
+    elements.toggleCalculatorBtn.style.display = 'none';
+  }
+  
+  // 復活の呪文セクションを表示
+  document.getElementById('spellSection').style.display = 'block';
 });
 
 function switchMode(admin) {
