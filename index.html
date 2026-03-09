@@ -10,6 +10,8 @@
 <title>福祉用具点数計算アプリ</title>
 
 <!-- Firebase SDK -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js';
   import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, writeBatch } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js';
@@ -3305,27 +3307,26 @@ function generateSpell() {
     return;
   }
   
-  // 最小限のデータのみ保存
+  // 最小限のデータのみ保存（category, taisCodeを除外）
   const spellData = {
-    v: '1', // version
-    s: currentSalesPerson || '', // salesPerson
-    h: elements.homeNameInput?.value || '', // homeName
-    c: elements.contractorNameInput?.value || '', // contractorName
-    r: elements.remarksInput?.value || '', // remarks
-    b: burdenRate, // burdenRate
+    v: '1',
+    s: currentSalesPerson || '',
+    h: elements.homeNameInput?.value || '',
+    c: elements.contractorNameInput?.value || '',
+    r: elements.remarksInput?.value || '',
+    b: burdenRate,
     i: selectedItems.map(item => ({
-      n: item.name, // name
-      p: item.points, // points
-      q: item.quantity, // quantity
-      h: item.isHalfMonth ? 1 : 0, // isHalfMonth (true=1, false=0)
-      c: item.category || '', // category
-      t: item.taisCode || '' // taisCode
+      n: item.name,
+      p: item.points,
+      q: item.quantity,
+      h: item.isHalfMonth ? 1 : 0
     }))
   };
   
-  // JSON → Base64エンコード
+  // JSON → 圧縮 → Base64
   const jsonStr = JSON.stringify(spellData);
-  const spell = btoa(unescape(encodeURIComponent(jsonStr)));
+  const compressed = pako.deflate(jsonStr);
+  const spell = btoa(String.fromCharCode.apply(null, compressed));
   
   // 表示
   const output = document.getElementById('spellOutput');
@@ -3335,7 +3336,7 @@ function generateSpell() {
   copyBtn.style.display = 'block';
 }
 
-function restoreFromSpell() {
+fufunction restoreFromSpell() {
   const input = document.getElementById('spellInput');
   const spell = input.value.trim();
   
@@ -3345,23 +3346,23 @@ function restoreFromSpell() {
   }
   
   try {
-    // Base64デコード
-    const jsonStr = decodeURIComponent(escape(atob(spell)));
+    // Base64 → 解凍 → JSON
+    const compressed = Uint8Array.from(atob(spell), c => c.charCodeAt(0));
+    const jsonStr = pako.inflate(compressed, { to: 'string' });
     const data = JSON.parse(jsonStr);
     
-    // 短縮形式から元のデータに復元
+    // データを復元
     selectedItems = (data.i || []).map(item => ({
       name: item.n,
       points: item.p,
       quantity: item.q,
       isHalfMonth: item.h === 1,
-      category: item.c || '',
-      taisCode: item.t || ''
+      category: '',
+      taisCode: ''
     }));
     
     burdenRate = data.b || 1;
     
-    // 負担割合ボタンを更新
     document.querySelectorAll('.burden-btn').forEach(btn => {
       btn.classList.remove('active');
       if (parseFloat(btn.dataset.rate) === burdenRate) {
@@ -3373,7 +3374,6 @@ function restoreFromSpell() {
     updateMobileCount();
     saveSelectedItems();
     
-    // 入力欄を復元
     setTimeout(() => {
       const homeInput = document.getElementById('homeNameInput');
       const contractorInput = document.getElementById('contractorNameInput');
@@ -3384,12 +3384,8 @@ function restoreFromSpell() {
       if (remarksInput) remarksInput.value = data.r || '';
     }, 100);
     
-    // 利用者モードに切り替え
     document.getElementById('userMode').click();
-    
     alert('呪文から復元しました！');
-    
-    // 入力欄をクリア
     input.value = '';
     
   } catch (error) {
