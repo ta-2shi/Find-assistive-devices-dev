@@ -3305,23 +3305,6 @@ function generateSpell() {
     return;
   }
   
-  const spellData = {
-    version: '1.0',
-    salesPerson: currentSalesPerson || '未設定',
-    homeName: elements.homeNameInput?.value || '',
-    contractorName: elements.contractorNameInput?.value || '',
-    remarks: elements.remarksInput?.value || '',
-    burdenRate: burdenRate,
-    items: selectedItems,
-    timestamp: new Date().toISOString()
-  };
-  
- function generateSpell() {
-  if (selectedItems.length === 0) {
-    alert('選択した品目がありません。');
-    return;
-  }
-  
   // 最小限のデータのみ保存
   const spellData = {
     v: '1', // version
@@ -3343,14 +3326,6 @@ function generateSpell() {
   // JSON → Base64エンコード
   const jsonStr = JSON.stringify(spellData);
   const spell = btoa(unescape(encodeURIComponent(jsonStr)));
-  
-  // 表示
-  const output = document.getElementById('spellOutput');
-  const copyBtn = document.getElementById('copySpellBtn');
-  output.value = spell;
-  output.style.display = 'block';
-  copyBtn.style.display = 'block';
-}
   
   // 表示
   const output = document.getElementById('spellOutput');
