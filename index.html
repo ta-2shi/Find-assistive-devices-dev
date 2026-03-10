@@ -3301,39 +3301,66 @@ window.restoreFromHistory = restoreFromHistory;
 window.restoreFromHistory = restoreFromHistory;
 
 // 復活の呪文機能
-function generateSpell() {
-  if (selectedItems.length === 0) {
-    alert('選択した品目がありません。');
+function restoreFromSpell() {
+  const input = document.getElementById('spellInput');
+  let spell = input.value.trim();
+  
+  if (!spell) {
+    alert('呪文を入力してください。');
     return;
   }
   
-  // 最小限のデータのみ保存（category, taisCodeを除外）
-  const spellData = {
-    v: '1',
-    s: currentSalesPerson || '',
-    h: elements.homeNameInput?.value || '',
-    c: elements.contractorNameInput?.value || '',
-    r: elements.remarksInput?.value || '',
-    b: burdenRate,
-    i: selectedItems.map(item => ({
-      n: item.name,
-      p: item.points,
-      q: item.quantity,
-      h: item.isHalfMonth ? 1 : 0
-    }))
-  };
-  
-  // JSON → 圧縮 → Base64
-  const jsonStr = JSON.stringify(spellData);
-  const compressed = pako.deflate(jsonStr);
-  const spell = btoa(String.fromCharCode.apply(null, compressed));
-  
-  // 表示
-  const output = document.getElementById('spellOutput');
-  const copyBtn = document.getElementById('copySpellBtn');
-  output.value = spell;
-  output.style.display = 'block';
-  copyBtn.style.display = 'block';
+  try {
+    // Base64URL → Base64に戻す
+    spell = spell.replace(/-/g, '+').replace(/_/g, '/');
+    while (spell.length % 4) spell += '=';
+    
+    // Base64 → 解凍 → JSON
+    const compressed = Uint8Array.from(atob(spell), c => c.charCodeAt(0));
+    const jsonStr = pako.inflate(compressed, { to: 'string' });
+    const data = JSON.parse(jsonStr);
+    
+    // データを復元
+    selectedItems = (data.i || []).map(item => ({
+      name: item.n,
+      points: item.p,
+      quantity: item.q || 1, // デフォルト1
+      isHalfMonth: item.h === 1,
+      category: '',
+      taisCode: ''
+    }));
+    
+    burdenRate = data.b || 1;
+    
+    document.querySelectorAll('.burden-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (parseFloat(btn.dataset.rate) === burdenRate) {
+        btn.classList.add('active');
+      }
+    });
+    
+    updateCalculator();
+    updateMobileCount();
+    saveSelectedItems();
+    
+    setTimeout(() => {
+      const homeInput = document.getElementById('homeNameInput');
+      const contractorInput = document.getElementById('contractorNameInput');
+      const remarksInput = document.getElementById('remarksInput');
+      
+      if (homeInput) homeInput.value = data.h || '';
+      if (contractorInput) contractorInput.value = data.c || '';
+      if (remarksInput) remarksInput.value = data.r || '';
+    }, 100);
+    
+    document.getElementById('userMode').click();
+    alert('呪文から復元しました！');
+    input.value = '';
+    
+  } catch (error) {
+    alert('呪文が無効です。正しい呪文を入力してください。');
+    console.error('復元エラー:', error);
+  }
 }
 
 function restoreFromSpell() {
