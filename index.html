@@ -3393,14 +3393,20 @@ function restoreFromSpell() {
     }, 100);
     
     document.getElementById('userMode').click();
+    
+    // モバイルの場合、「計算結果を表示」ボタンを再表示
+    if (window.innerWidth < 768) {
+      const calculator = document.querySelector('.calculator');
+      calculator.style.display = 'none';
+      calculator.classList.remove('show');
+      
+      if (elements.toggleCalculatorBtn) {
+        elements.toggleCalculatorBtn.style.display = 'block';
+      }
+    }
+    
     alert('呪文から復元しました！');
     input.value = '';
-    
-  } catch (error) {
-    alert('呪文が無効です。正しい呪文を入力してください。');
-    console.error('復元エラー:', error);
-  }
-}
 
 // ボタンのイベントリスナー
 document.getElementById('generateSpellBtn').addEventListener('click', generateSpell);
