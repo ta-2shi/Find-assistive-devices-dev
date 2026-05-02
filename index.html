@@ -3411,6 +3411,12 @@ function restoreFromSpell() {
     
     alert('呪文から復元しました！');
     input.value = '';
+    
+    } catch (error) {
+    alert('呪文が無効です。正しい呪文を入力してください。');
+    console.error('復元エラー:', error);
+  }
+}
 
 // ボタンのイベントリスナー
 document.getElementById('generateSpellBtn').addEventListener('click', generateSpell);
