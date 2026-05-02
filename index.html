@@ -3291,6 +3291,11 @@ function restoreFromHistory(id) {
     const calculator = document.querySelector('.calculator');
     calculator.style.display = 'none';
     calculator.classList.remove('show');
+    
+    // 「計算結果を表示」ボタンを再表示
+    if (elements.toggleCalculatorBtn) {
+      elements.toggleCalculatorBtn.style.display = 'block';
+    }
   }
   
   alert('履歴から復元しました！');
