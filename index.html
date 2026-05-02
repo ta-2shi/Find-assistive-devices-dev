@@ -1928,12 +1928,17 @@ function switchMode(admin) {
   if (admin) {
     // 管理者モードでは計算機を非表示
     document.querySelector('.calculator').style.display = 'none';
-  } else {
+ } else {
     // 利用者モードでは計算機を表示（モバイルは除く）
     if (window.innerWidth >= 768) {
       document.querySelector('.calculator').style.display = 'flex';
     } else {
       document.querySelector('.calculator').style.display = 'none';
+    }
+    
+    // モバイルの場合、「計算結果を表示」ボタンを再表示
+    if (window.innerWidth < 768 && elements.toggleCalculatorBtn) {
+      elements.toggleCalculatorBtn.style.display = 'block';
     }
   }
   
