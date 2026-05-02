@@ -1430,18 +1430,26 @@ animation: spin 1s linear infinite;
 </div>
 
 <div class="admin-panel" id="adminPanel">
-<div class="database-info" style="background: rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.2);">
-<div style="display: flex; justify-content: space-between; align-items: center;">
-<div>
-<h3 style="color: rgba(255, 255, 255, 0.9); margin: 0 0 5px 0; font-size: 16px;">データベース情報</h3>
-<p style="color: rgba(255, 255, 255, 0.7); margin: 0; font-size: 14px;">登録件数: <span id="dbCount" style="color: #10b981; font-weight: 600;">読み込み中...</span></p>
-</div>
-<button class="refresh-count-btn" id="refreshCountBtn" style="background: linear-gradient(45deg, #6366f1, #4f46e5); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
-更新
-</button>
-</div>
-</div>
-
+  <div class="database-info" style="background: rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.2);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <div>
+        <h3 style="color: rgba(255, 255, 255, 0.9); margin: 0 0 5px 0; font-size: 16px;">データベース情報</h3>
+        <p style="color: rgba(255, 255, 255, 0.7); margin: 0; font-size: 14px;">登録件数: <span id="dbCount" style="color: #10b981; font-weight: 600;">読み込み中...</span></p>
+      </div>
+      <button class="refresh-count-btn" id="refreshCountBtn" style="background: linear-gradient(45deg, #6366f1, #4f46e5); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
+        更新
+      </button>
+    </div>
+    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+      <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 10px 0; font-size: 13px;">
+        最終更新: <span id="cacheUpdateTime" style="color: #10b981; font-weight: 600;">-</span>
+      </p>
+      <button id="updateDataBtn" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+        📥 データを更新
+      </button>
+    </div>
+  </div>
+  
 <div class="upload-section">
 <div class="file-upload-container">
 <input type="file" class="file-input" id="fileInput" accept=".xlsx,.xls">
@@ -1667,6 +1675,58 @@ burdenRate2: document.getElementById('burdenRate2'),
 burdenRate3: document.getElementById('burdenRate3')
 };
 
+// キャッシュ管理
+const CacheManager = {
+  CACHE_KEY: 'welfare_equipment_cache',
+  CACHE_TIMESTAMP_KEY: 'welfare_equipment_cache_timestamp',
+  CACHE_DURATION: 24 * 60 * 60 * 1000, // 24時間（ミリ秒）
+  
+  // キャッシュを保存
+  saveCache(data) {
+    try {
+      localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
+      localStorage.setItem(this.CACHE_TIMESTAMP_KEY, Date.now().toString());
+      console.log(`✅ キャッシュ保存: ${data.length}件`);
+    } catch (error) {
+      console.error('キャッシュ保存エラー:', error);
+    }
+  },
+  
+  // キャッシュを取得
+  getCache() {
+    try {
+      const cached = localStorage.getItem(this.CACHE_KEY);
+      return cached ? JSON.parse(cached) : null;
+    } catch (error) {
+      console.error('キャッシュ読み込みエラー:', error);
+      return null;
+    }
+  },
+  
+  // キャッシュが有効か確認
+  isCacheValid() {
+    const timestamp = localStorage.getItem(this.CACHE_TIMESTAMP_KEY);
+    if (!timestamp) return false;
+    
+    const age = Date.now() - parseInt(timestamp);
+    return age < this.CACHE_DURATION;
+  },
+  
+  // キャッシュをクリア
+  clearCache() {
+    localStorage.removeItem(this.CACHE_KEY);
+    localStorage.removeItem(this.CACHE_TIMESTAMP_KEY);
+    console.log('🗑️ キャッシュをクリアしました');
+  },
+  
+  // 最終更新時刻を取得
+  getLastUpdateTime() {
+    const timestamp = localStorage.getItem(this.CACHE_TIMESTAMP_KEY);
+    if (!timestamp) return null;
+    return new Date(parseInt(timestamp));
+  }
+};
+  
 // Firebase データベース操作
 const FirebaseDB = {
 async getEquipmentCount() {
@@ -1787,6 +1847,7 @@ await updateDatabaseCount(); // 件数を表示
 showEmptySearchState();
 loadSelectedItems();
 loadRemarks();
+    updateCacheTimeDisplay(); // キャッシュ時刻を表示
 } catch (error) {
 showError('データベース接続エラーが発生しました。');
 }
@@ -1794,24 +1855,88 @@ showError('データベース接続エラーが発生しました。');
 
 // 福祉用具データの読み込み
 async function loadEquipmentData() {
-try {
-welfareEquipment = await FirebaseDB.loadEquipment();
-filteredItems = welfareEquipment;
-showInfo(`${welfareEquipment.length}件のデータを読み込みました`);
-} catch (error) {
-throw error;
-}
+  try {
+    // キャッシュチェック
+    if (CacheManager.isCacheValid()) {
+      // キャッシュが有効な場合（24時間以内）
+      console.log('📦 キャッシュからデータを読み込み');
+      welfareEquipment = CacheManager.getCache();
+      filteredItems = welfareEquipment;
+      
+      const lastUpdate = CacheManager.getLastUpdateTime();
+      showInfo(`${welfareEquipment.length}件のデータを読み込みました（キャッシュ: ${lastUpdate.toLocaleString('ja-JP')}）`);
+      
+    } else {
+      // キャッシュが無効または存在しない場合
+      console.log('🔄 Firestoreからデータを読み込み');
+      welfareEquipment = await FirebaseDB.loadEquipment();
+      filteredItems = welfareEquipment;
+      
+      // キャッシュに保存
+      CacheManager.saveCache(welfareEquipment);
+      showInfo(`${welfareEquipment.length}件のデータを読み込みました（最新データ取得）`);
+    }
+  } catch (error) {
+    throw error;
+  }
 }
 
 // データベース件数の更新
 async function updateDatabaseCount() {
-try {
-const count = await FirebaseDB.getEquipmentCount();
-elements.dbCountSpan.textContent = `${count.toLocaleString()}件`;
-} catch (error) {
-elements.dbCountSpan.textContent = 'エラー';
-console.error('件数取得エラー:', error);
+  try {
+    const count = await FirebaseDB.getEquipmentCount();
+    elements.dbCountSpan.textContent = `${count.toLocaleString()}件`;
+  } catch (error) {
+    elements.dbCountSpan.textContent = 'エラー';
+    console.error('件数取得エラー:', error);
+  }
 }
+
+// キャッシュ更新時刻を表示
+function updateCacheTimeDisplay() {
+  const cacheTimeSpan = document.getElementById('cacheUpdateTime');
+  if (!cacheTimeSpan) return;
+  
+  const lastUpdate = CacheManager.getLastUpdateTime();
+  if (lastUpdate) {
+    const now = new Date();
+    const diffMs = now - lastUpdate;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (diffHours > 0) {
+      cacheTimeSpan.textContent = `${diffHours}時間前`;
+    } else if (diffMinutes > 0) {
+      cacheTimeSpan.textContent = `${diffMinutes}分前`;
+    } else {
+      cacheTimeSpan.textContent = `たった今`;
+    }
+  } else {
+    cacheTimeSpan.textContent = '-';
+  }
+}
+
+// データベースを強制更新
+async function updateDatabaseCache() {
+  try {
+    showInfo('データベースを更新中...');
+    
+    // Firestoreから最新データを取得
+    welfareEquipment = await FirebaseDB.loadEquipment();
+    filteredItems = welfareEquipment;
+    
+    // キャッシュに保存
+    CacheManager.saveCache(welfareEquipment);
+    
+    // 件数と時刻を更新
+    await updateDatabaseCount();
+    updateCacheTimeDisplay();
+    
+    showInfo(`データベースを更新しました（${welfareEquipment.length}件）`);
+  } catch (error) {
+    showError('データベース更新エラーが発生しました。');
+    console.error('更新エラー:', error);
+  }
 }
 
 // 選択済みアイテムの読み込み
@@ -2042,6 +2167,13 @@ elements.clearDatabaseBtn.addEventListener('click', handleClearDatabase);
 
 // 件数更新
 elements.refreshCountBtn.addEventListener('click', updateDatabaseCount);
+
+ // データを更新ボタン
+document.getElementById('updateDataBtn').addEventListener('click', async () => {
+  if (confirm('データベースから最新データを取得しますか？')) {
+    await updateDatabaseCache();
+  }
+}); 
 
 async function handleClearDatabase() {
 // 二重確認で安全性を高める
