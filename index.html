@@ -3818,14 +3818,34 @@ document.getElementById('copyShareCodeBtn').addEventListener('click', () => {
 });
 document.getElementById('restoreShareCodeBtn').addEventListener('click', restoreFromShareCode);
 
-// 共有コード入力欄で自動的に大文字変換（シンプル版）
+// 共有コード入力欄で自動変換（IME対応・シンプル版）
+let isComposing = false;
+
+document.getElementById('shareCodeInput').addEventListener('compositionstart', () => {
+  isComposing = true;
+});
+
+document.getElementById('shareCodeInput').addEventListener('compositionend', (e) => {
+  isComposing = false;
+  processShareCodeInput(e.target);
+});
+
 document.getElementById('shareCodeInput').addEventListener('input', (e) => {
-  // 英数字のみ許可、大文字に変換、6文字制限
-  e.target.value = e.target.value
+  if (!isComposing) {
+    processShareCodeInput(e.target);
+  }
+});
+
+function processShareCodeInput(input) {
+  const cleaned = input.value
     .replace(/[^A-Z0-9]/gi, '')  // 英数字以外を削除
     .toUpperCase()                // 大文字に変換
     .substring(0, 6);             // 6文字制限
-});
+  
+  if (input.value !== cleaned) {
+    input.value = cleaned;
+  }
+}
   
 // 担当者管理
 let currentSalesPerson = localStorage.getItem('salesPerson') || '';
