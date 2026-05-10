@@ -1936,7 +1936,7 @@ throw error;
     }
   },
   
-  async loadSharedCode(code) {
+ async loadSharedCode(code) {
     try {
       const q = window.firestore.query(
         window.firestore.collection(window.db, 'shared_codes'),
