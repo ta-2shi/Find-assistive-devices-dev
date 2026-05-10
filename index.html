@@ -1426,7 +1426,7 @@ animation: spin 1s linear infinite;
   <button class="mode-btn active" id="userMode">利用者モード</button>
   <button class="mode-btn" id="adminMode">管理者モード</button>
   <button class="mode-btn" id="historyMode">履歴</button>
-  <button class="mode-btn" id="spellMode">復活の呪文</button>
+  <button class="mode-btn" id="spellMode">🔗 共有・保存</button>
 </div>
 
 <div class="admin-panel" id="adminPanel">
@@ -1500,35 +1500,104 @@ Excelファイルをアップロード
   </div>
 </div>
 
-<!-- 復活の呪文セクション -->
-<div class="spell-section" id="spellSection" style="display: none;">
-  <div class="spell-header" style="background: rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-    <h2 style="color: rgba(255,255,255,0.9); margin: 0 0 8px 0; font-size: 20px;">復活の呪文</h2>
-    <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 14px;">他の端末にデータを共有できます</p>
+<!-- 共有・バックアップセクション -->
+<div id="spellSection" style="display: none; max-width: 600px; margin: 0 auto; padding: 20px;">
+  
+  <!-- 共有コード（メイン機能） -->
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);">
+    <h2 style="color: white; margin: 0 0 20px 0; font-size: 20px; display: flex; align-items: center; gap: 8px;">
+      🔗 共有コード
+    </h2>
+    
+    <!-- コード生成 -->
+    <div style="background: rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px);">
+      <h3 style="color: white; margin: 0 0 12px 0; font-size: 16px;">📤 コードを生成</h3>
+      <p style="color: rgba(255, 255, 255, 0.9); margin: 0 0 15px 0; font-size: 14px;">
+        選択した品目を保存して、6桁のコードを生成します
+      </p>
+      
+      <input type="text" id="shareDescription" placeholder="メモ（例: 玄関段差解消用）" style="width: 100%; padding: 12px; border: none; border-radius: 8px; margin-bottom: 12px; font-size: 14px; box-sizing: border-box;">
+      
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <label style="flex: 1; background: rgba(255, 255, 255, 0.2); padding: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+          <input type="radio" name="shareExpiry" value="permanent" checked style="margin: 0;">
+          <span style="color: white; font-size: 14px;">無期限</span>
+        </label>
+        <label style="flex: 1; background: rgba(255, 255, 255, 0.2); padding: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+          <input type="radio" name="shareExpiry" value="24hours" style="margin: 0;">
+          <span style="color: white; font-size: 14px;">24時間</span>
+        </label>
+      </div>
+      
+      <button id="generateShareCodeBtn" style="width: 100%; padding: 14px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s;">
+        コードを生成
+      </button>
+      
+      <!-- 生成されたコード表示 -->
+      <div id="shareCodeResult" style="display: none; margin-top: 15px; background: rgba(255, 255, 255, 0.25); border-radius: 8px; padding: 15px;">
+        <p style="color: white; margin: 0 0 10px 0; font-size: 14px;">生成されたコード:</p>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="text" id="shareCodeOutput" readonly style="flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; text-align: center; letter-spacing: 4px; background: white; color: #667eea;">
+          <button id="copyShareCodeBtn" style="padding: 12px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;">
+            📋 コピー
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- コードから復元 -->
+    <div style="background: rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 20px; backdrop-filter: blur(10px);">
+      <h3 style="color: white; margin: 0 0 12px 0; font-size: 16px;">📥 コードから復元</h3>
+      <p style="color: rgba(255, 255, 255, 0.9); margin: 0 0 15px 0; font-size: 14px;">
+        6桁のコードを入力してデータを復元
+      </p>
+      
+      <div style="display: flex; gap: 10px;">
+        <input type="text" id="shareCodeInput" placeholder="AB12CD" maxlength="6" style="flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 16px; text-transform: uppercase; text-align: center; letter-spacing: 4px; font-weight: 600;">
+        <button id="restoreShareCodeBtn" style="padding: 12px 24px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;">
+          復元
+        </button>
+      </div>
+    </div>
   </div>
   
-  <!-- 呪文を生成 -->
-  <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-    <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1e293b;">呪文を生成</h3>
-    <p style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280;">現在選択中の品目から呪文を作成します</p>
-    <button id="generateSpellBtn" style="width: 100%; background: linear-gradient(45deg, #8b5cf6, #7c3aed); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">
-      呪文を生成
-    </button>
-    <textarea id="spellOutput" readonly style="width: 100%; min-height: 100px; margin-top: 12px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-family: monospace; font-size: 12px; display: none;"></textarea>
-    <button id="copySpellBtn" style="width: 100%; background: #10b981; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; margin-top: 8px; display: none;">
-      📋 コピー
-    </button>
-  </div>
+  <!-- 復活の呪文（オプション） -->
+  <details style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
+    <summary style="color: rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 14px; font-weight: 600; list-style: none; display: flex; align-items: center; gap: 8px;">
+      <span>▶</span>
+      <span>その他のオプション（ローカルバックアップ）</span>
+    </summary>
+    
+    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+      <h3 style="color: rgba(255, 255, 255, 0.9); margin: 0 0 12px 0; font-size: 16px;">🔮 復活の呪文</h3>
+      <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 15px 0; font-size: 13px;">
+        オフライン対応・完全個人管理のバックアップ
+      </p>
+      
+      <!-- 呪文生成 -->
+      <div style="margin-bottom: 20px;">
+        <button id="generateSpellBtn" style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
+          呪文を生成
+        </button>
+        
+        <textarea id="spellOutput" readonly style="display: none; width: 100%; margin-top: 10px; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 12px; font-family: monospace; resize: vertical; min-height: 80px; box-sizing: border-box;"></textarea>
+        
+        <button id="copySpellBtn" style="display: none; width: 100%; margin-top: 8px; padding: 10px; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
+          📋 呪文をコピー
+        </button>
+      </div>
+      
+      <!-- 呪文から復元 -->
+      <div>
+        <textarea id="spellInput" placeholder="ここに呪文を貼り付け" style="width: 100%; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 12px; font-family: monospace; resize: vertical; min-height: 80px; margin-bottom: 10px; box-sizing: border-box;"></textarea>
+        
+        <button id="restoreSpellBtn" style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
+          呪文から復元
+        </button>
+      </div>
+    </div>
+  </details>
   
-  <!-- 呪文から復元 -->
-  <div style="background: white; border-radius: 12px; padding: 20px;">
-    <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1e293b;">呪文から復元</h3>
-    <p style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280;">呪文を貼り付けてデータを復元します</p>
-    <textarea id="spellInput" placeholder="ここに呪文を貼り付けてください..." style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-family: monospace; font-size: 12px; font-size: 16px;"></textarea>
-    <button id="restoreSpellBtn" style="width: 100%; background: linear-gradient(45deg, #f59e0b, #d97706); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; margin-top: 8px;">
-      復元
-    </button>
-  </div>
 </div>
   
 <div class="search-container">
@@ -1836,7 +1905,78 @@ return querySnapshot.size;
 console.error('全データ削除エラー:', error);
 throw error;
 }
-}
+},
+ async saveSharedCode(data, isPermanent = true) {
+    try {
+      const code = this.generateShareCode();
+      const sharedData = {
+        code: code,
+        salesPerson: data.salesPerson || '',
+        homeName: data.homeName || '',
+        contractorName: data.contractorName || '',
+        remarks: data.remarks || '',
+        burdenRate: data.burdenRate || 1,
+        items: data.items || [],
+        createdBy: data.salesPerson || '',
+        createdAt: new Date(),
+        expiresAt: isPermanent ? null : new Date(Date.now() + 24 * 60 * 60 * 1000),
+        description: data.description || '',
+        lastAccessedAt: new Date()
+      };
+      
+      await window.firestore.addDoc(
+        window.firestore.collection(window.db, 'shared_codes'),
+        sharedData
+      );
+      console.log('✅ 共有コード保存:', code);
+      return code;
+    } catch (error) {
+      console.error('共有コード保存エラー:', error);
+      throw error;
+    }
+  },
+  
+  async loadSharedCode(code) {
+    try {
+      const q = window.firestore.query(
+        window.firestore.collection(window.db, 'shared_codes'),
+        window.firestore.where('code', '==', code.toUpperCase())
+      );
+      const snapshot = await window.firestore.getDocs(q);
+      
+      if (snapshot.empty) {
+        throw new Error('共有コードが見つかりません');
+      }
+      
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      
+      // 有効期限チェック
+      if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
+        throw new Error('共有コードの有効期限が切れています');
+      }
+      
+      // 最終アクセス日時を更新
+      await window.firestore.updateDoc(doc.ref, {
+        lastAccessedAt: new Date()
+      });
+      
+      console.log('✅ 共有コード読み込み:', code);
+      return data;
+    } catch (error) {
+      console.error('共有コード読み込みエラー:', error);
+      throw error;
+    }
+  },
+  
+  generateShareCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字を除外
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
 };
 
 // 初期化
@@ -3565,6 +3705,124 @@ document.getElementById('copySpellBtn').addEventListener('click', () => {
 });
 document.getElementById('restoreSpellBtn').addEventListener('click', restoreFromSpell);
 
+// 共有コード機能
+async function generateShareCode() {
+  if (selectedItems.length === 0) {
+    alert('選択した品目がありません。');
+    return;
+  }
+  
+  try {
+    const description = document.getElementById('shareDescription').value;
+    const isPermanent = document.querySelector('input[name="shareExpiry"]:checked').value === 'permanent';
+    
+    const shareData = {
+      salesPerson: currentSalesPerson || '未設定',
+      homeName: elements.homeNameInput?.value || '',
+      contractorName: elements.contractorNameInput?.value || '',
+      remarks: elements.remarksInput?.value || '',
+      burdenRate: burdenRate,
+      items: selectedItems,
+      description: description
+    };
+    
+    showInfo('共有コードを生成中...');
+    const code = await FirebaseDB.saveSharedCode(shareData, isPermanent);
+    
+    // コードを表示
+    document.getElementById('shareCodeOutput').value = code;
+    document.getElementById('shareCodeResult').style.display = 'block';
+    
+    showInfo(`共有コードを生成しました: ${code}`);
+  } catch (error) {
+    showError('共有コード生成に失敗しました。');
+    console.error('共有コード生成エラー:', error);
+  }
+}
+
+async function restoreFromShareCode() {
+  const input = document.getElementById('shareCodeInput');
+  const code = input.value.trim().toUpperCase();
+  
+  if (!code) {
+    alert('共有コードを入力してください。');
+    return;
+  }
+  
+  if (code.length !== 6) {
+    alert('共有コードは6桁です。');
+    return;
+  }
+  
+  try {
+    showInfo('データを読み込み中...');
+    const data = await FirebaseDB.loadSharedCode(code);
+    
+    // データを復元
+    selectedItems = data.items || [];
+    burdenRate = data.burdenRate || 1;
+    
+    // 負担割合ボタンを更新
+    document.querySelectorAll('.burden-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (parseFloat(btn.dataset.rate) === burdenRate) {
+        btn.classList.add('active');
+      }
+    });
+    
+    updateCalculator();
+    updateMobileCount();
+    saveSelectedItems();
+    
+    // 入力欄を復元
+    setTimeout(() => {
+      const homeInput = document.getElementById('homeNameInput');
+      const contractorInput = document.getElementById('contractorNameInput');
+      const remarksInput = document.getElementById('remarksInput');
+      
+      if (homeInput) homeInput.value = data.homeName || '';
+      if (contractorInput) contractorInput.value = data.contractorName || '';
+      if (remarksInput) remarksInput.value = data.remarks || '';
+    }, 100);
+    
+    // 利用者モードに切り替え
+    document.getElementById('userMode').click();
+    
+    // モバイルの場合、「計算結果を表示」ボタンを再表示
+    if (window.innerWidth < 768) {
+      const calculator = document.querySelector('.calculator');
+      calculator.style.display = 'none';
+      calculator.classList.remove('show');
+      
+      if (elements.toggleCalculatorBtn) {
+        elements.toggleCalculatorBtn.style.display = 'block';
+      }
+    }
+    
+    showInfo('共有コードから復元しました！');
+    input.value = '';
+    
+  } catch (error) {
+    showError(error.message || '共有コードの読み込みに失敗しました。');
+    console.error('共有コード復元エラー:', error);
+  }
+}
+
+// 共有コードボタンのイベントリスナー
+document.getElementById('generateShareCodeBtn').addEventListener('click', generateShareCode);
+document.getElementById('copyShareCodeBtn').addEventListener('click', () => {
+  const output = document.getElementById('shareCodeOutput');
+  output.select();
+  document.execCommand('copy');
+  showInfo('共有コードをコピーしました！');
+});
+document.getElementById('restoreShareCodeBtn').addEventListener('click', restoreFromShareCode);
+
+// 共有コード入力欄で自動的に大文字に変換
+document.getElementById('shareCodeInput').addEventListener('input', (e) => {
+  e.target.value = e.target.value.toUpperCase();
+});
+  
 // 担当者管理
 let currentSalesPerson = localStorage.getItem('salesPerson') || '';
 
