@@ -1516,19 +1516,7 @@ Excelファイルをアップロード
         選択した品目を保存して、6桁のコードを生成します
       </p>
       
-      <input type="text" id="shareDescription" placeholder="メモ（例: 玄関段差解消用）" style="width: 100%; padding: 12px; border: none; border-radius: 8px; margin-bottom: 12px; font-size: 14px; box-sizing: border-box;">
-      
-      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <label style="flex: 1; background: rgba(255, 255, 255, 0.2); padding: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-          <input type="radio" name="shareExpiry" value="permanent" checked style="margin: 0;">
-          <span style="color: white; font-size: 14px;">無期限</span>
-        </label>
-        <label style="flex: 1; background: rgba(255, 255, 255, 0.2); padding: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-          <input type="radio" name="shareExpiry" value="24hours" style="margin: 0;">
-          <span style="color: white; font-size: 14px;">24時間</span>
-        </label>
-      </div>
-      
+           
       <button id="generateShareCodeBtn" style="width: 100%; padding: 14px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s;">
         コードを生成
       </button>
@@ -2164,6 +2152,7 @@ document.getElementById('spellMode').addEventListener('click', () => {
   document.querySelector('.favorite-section').style.display = 'none';
   document.getElementById('searchResults').style.display = 'none';
   document.querySelector('.calculator').style.display = 'none';
+  document.getElementById('spellSection').style.display = 'none'; 
   document.getElementById('historySection').style.display = 'none';
   
   // モバイルの「計算結果を表示」ボタンを非表示
@@ -3713,9 +3702,6 @@ async function generateShareCode() {
   }
   
   try {
-    const description = document.getElementById('shareDescription').value;
-    const isPermanent = document.querySelector('input[name="shareExpiry"]:checked').value === 'permanent';
-    
     const shareData = {
       salesPerson: currentSalesPerson || '未設定',
       homeName: elements.homeNameInput?.value || '',
@@ -3723,11 +3709,11 @@ async function generateShareCode() {
       remarks: elements.remarksInput?.value || '',
       burdenRate: burdenRate,
       items: selectedItems,
-      description: description
+      description: ''
     };
     
     showInfo('共有コードを生成中...');
-    const code = await FirebaseDB.saveSharedCode(shareData, isPermanent);
+    const code = await FirebaseDB.saveSharedCode(shareData, true); // 常に無期限
     
     // コードを表示
     document.getElementById('shareCodeOutput').value = code;
