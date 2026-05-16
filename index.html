@@ -3643,7 +3643,18 @@ function restoreFromHistory(id) {
   }, 100);
   
 // 利用者モードに切り替え
-  document.getElementById('userMode').click();
+  switchMode(false);
+  
+  // 履歴セクションを非表示、検索セクションを表示
+  document.getElementById('historySection').style.display = 'none';
+  document.querySelector('.search-container').style.display = 'block';
+  document.querySelector('.favorite-section').style.display = 'block';
+  document.getElementById('searchResults').style.display = 'block';
+  
+  // ドロワーメニューの状態を更新
+  document.querySelectorAll('.drawer-menu-item').forEach(btn => btn.classList.remove('active'));
+  document.getElementById('drawerUserMode').classList.add('active');
+  document.getElementById('currentModeName').textContent = '利用者モード';
   
   // モバイルの場合、計算機の状態をリセット
   if (window.innerWidth < 768) {
