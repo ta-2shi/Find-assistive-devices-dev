@@ -2160,14 +2160,60 @@ function switchToMode(mode) {
   } else if (mode === 'history') {
     document.getElementById('drawerHistoryMode').classList.add('active');
     document.getElementById('currentModeName').textContent = '履歴';
-    document.getElementById('historyMode').click();
+    showHistoryMode();
   } else if (mode === 'spell') {
     document.getElementById('drawerSpellMode').classList.add('active');
     document.getElementById('currentModeName').textContent = '共有・保存';
-    document.getElementById('spellMode').click();
+    showSpellMode();
   }
   
   closeDrawer();
+}
+
+// 履歴モードを表示
+function showHistoryMode() {
+  // 全セクションを非表示
+  elements.adminPanel.classList.remove('active');
+  document.querySelector('.search-container').style.display = 'none';
+  document.querySelector('.favorite-section').style.display = 'none';
+  document.getElementById('searchResults').style.display = 'none';
+  document.querySelector('.calculator').style.display = 'none';
+  document.getElementById('spellSection').style.display = 'none';
+  
+  // モバイルの「計算結果を表示」ボタンを非表示
+  if (elements.toggleCalculatorBtn) {
+    elements.toggleCalculatorBtn.style.display = 'none';
+  }
+  
+  // 履歴セクションを表示
+  document.getElementById('historySection').style.display = 'block';
+  
+  // 履歴を読み込み
+  loadHistory();
+}
+
+// 共有・保存モードを表示
+function showSpellMode() {
+  if (selectedItems.length === 0) {
+    alert('共有する品目がありません。まず福祉用具を選択してください。');
+    return;
+  }
+  
+  // 全セクションを非表示
+  elements.adminPanel.classList.remove('active');
+  document.querySelector('.search-container').style.display = 'none';
+  document.querySelector('.favorite-section').style.display = 'none';
+  document.getElementById('searchResults').style.display = 'none';
+  document.querySelector('.calculator').style.display = 'none';
+  document.getElementById('historySection').style.display = 'none';
+  
+  // モバイルの「計算結果を表示」ボタンを非表示
+  if (elements.toggleCalculatorBtn) {
+    elements.toggleCalculatorBtn.style.display = 'none';
+  }
+  
+  // 共有セクションを表示
+  document.getElementById('spellSection').style.display = 'block';
 }
 
 // ハンバーガーメニューボタン
