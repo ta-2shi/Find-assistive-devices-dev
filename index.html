@@ -79,50 +79,37 @@ margin-bottom: 16px;
 text-align: center;
 }
 
-.mode-toggle {
-display: flex;
-gap: 8px;
-margin-bottom: 20px;
-background: rgba(255, 255, 255, 0.1);
-border-radius: 12px;
-padding: 4px;
-}
-
-/* モードボタンのシンプルスタイル */
-.mode-btn {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.5);
-  color: rgba(255, 255, 255, 1);
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  padding: 12px 16px;
+/* ハンバーガーメニュー */
+#hamburgerBtn:hover {
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
 }
 
-/* モードボタンのシンプルスタイル */
-.mode-btn {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 12px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.mode-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.mode-btn.active {
+/* ドロワーメニューアイテム */
+.drawer-menu-item {
+  width: 100%;
+  padding: 16px 20px;
   background: white;
-  color: #2563eb;
-  border-color: white;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.drawer-menu-item:hover {
+  background: #f3f4f6;
+}
+
+.drawer-menu-item.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
 }
 
 /* 履歴セクションと管理者パネルの文字色 */
@@ -1422,11 +1409,51 @@ animation: spin 1s linear infinite;
 <button id="changeSalesPersonBtn" class="change-btn">変更</button>
 </div>
 
-<div class="mode-toggle">
-  <button class="mode-btn active" id="userMode">利用者モード</button>
-  <button class="mode-btn" id="adminMode">管理者モード</button>
-  <button class="mode-btn" id="historyMode">履歴</button>
-  <button class="mode-btn" id="spellMode">共有・保存</button>
+<!-- ハンバーガーメニューボタン -->
+<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+  <button id="hamburgerBtn" style="background: none; border: none; font-size: 28px; cursor: pointer; padding: 8px; color: #1e293b;">
+    ☰
+  </button>
+  <div style="flex: 1; text-align: center; font-size: 18px; font-weight: 600; color: #1e293b;">
+    <span id="currentModeName">利用者モード</span>
+  </div>
+</div>
+
+<!-- ドロワーメニュー -->
+<div id="drawerOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;" onclick="closeDrawer()"></div>
+
+<div id="drawerMenu" style="position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: white; z-index: 1000; transition: left 0.3s ease; box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1); overflow-y: auto;">
+  <div style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+    <h2 style="margin: 0; font-size: 20px;">メニュー</h2>
+  </div>
+  
+  <div style="padding: 10px 0;">
+    <button class="drawer-menu-item active" id="drawerUserMode" onclick="switchToMode('user')">
+      <span style="font-size: 20px; margin-right: 12px;">👤</span>
+      利用者モード
+    </button>
+    
+    <button class="drawer-menu-item" id="drawerAdminMode" onclick="switchToMode('admin')">
+      <span style="font-size: 20px; margin-right: 12px;">👨‍💼</span>
+      管理者モード
+    </button>
+    
+    <button class="drawer-menu-item" id="drawerHistoryMode" onclick="switchToMode('history')">
+      <span style="font-size: 20px; margin-right: 12px;">📜</span>
+      履歴
+    </button>
+    
+    <button class="drawer-menu-item" id="drawerSpellMode" onclick="switchToMode('spell')">
+      <span style="font-size: 20px; margin-right: 12px;">💾</span>
+      共有・保存
+    </button>
+  </div>
+  
+  <div style="position: absolute; bottom: 20px; left: 0; right: 0; padding: 0 20px;">
+    <button onclick="closeDrawer()" style="width: 100%; padding: 12px; background: #6b7280; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+      閉じる
+    </button>
+  </div>
 </div>
 
 <div class="admin-panel" id="adminPanel">
@@ -2109,9 +2136,44 @@ function loadRemarks() {
 
 // 入力時の自動保存（動的に生成される要素にはupdateCalculator内で設定済み）
   
-// モード切り替え
-elements.userModeBtn.addEventListener('click', () => switchMode(false));
-elements.adminModeBtn.addEventListener('click', () => switchMode(true));
+// ドロワーメニュー機能
+function openDrawer() {
+  document.getElementById('drawerOverlay').style.display = 'block';
+  document.getElementById('drawerMenu').style.left = '0';
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').style.display = 'none';
+  document.getElementById('drawerMenu').style.left = '-280px';
+}
+
+function switchToMode(mode) {
+  // ドロワーメニューのアクティブ状態を更新
+  document.querySelectorAll('.drawer-menu-item').forEach(btn => btn.classList.remove('active'));
+  
+  if (mode === 'user') {
+    document.getElementById('drawerUserMode').classList.add('active');
+    document.getElementById('currentModeName').textContent = '利用者モード';
+    switchMode(false);
+  } else if (mode === 'admin') {
+    document.getElementById('drawerAdminMode').classList.add('active');
+    document.getElementById('currentModeName').textContent = '管理者モード';
+    switchMode(true);
+  } else if (mode === 'history') {
+    document.getElementById('drawerHistoryMode').classList.add('active');
+    document.getElementById('currentModeName').textContent = '履歴';
+    document.getElementById('historyMode').click();
+  } else if (mode === 'spell') {
+    document.getElementById('drawerSpellMode').classList.add('active');
+    document.getElementById('currentModeName').textContent = '共有・保存';
+    document.getElementById('spellMode').click();
+  }
+  
+  closeDrawer();
+}
+
+// ハンバーガーメニューボタン
+document.getElementById('hamburgerBtn').addEventListener('click', openDrawer);
 
 // 履歴ボタン
 document.getElementById('historyMode').addEventListener('click', () => {
