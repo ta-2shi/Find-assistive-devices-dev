@@ -2192,13 +2192,7 @@ function showHistoryMode() {
   loadHistory();
 }
 
-// 共有・保存モードを表示
 function showSpellMode() {
-  if (selectedItems.length === 0) {
-    alert('共有する品目がありません。まず福祉用具を選択してください。');
-    return;
-  }
-  
   // 全セクションを非表示
   elements.adminPanel.classList.remove('active');
   document.querySelector('.search-container').style.display = 'none';
