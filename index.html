@@ -1536,43 +1536,42 @@ Excelファイルをアップロード
       🔗 共有コード
     </h2>
     
-    <!-- コード生成 -->
+    <!-- コードから復元（上に移動） -->
     <div style="background: rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px);">
-      <h3 style="color: white; margin: 0 0 12px 0; font-size: 16px;">📤 コードを生成</h3>
-      <p style="color: rgba(255, 255, 255, 0.9); margin: 0 0 15px 0; font-size: 14px;">
-        選択した品目を保存して、6桁のコードを生成します
-      </p>
-      
-           
-      <button id="generateShareCodeBtn" style="width: 100%; padding: 14px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s;">
-        コードを生成
-      </button>
-      
-      <!-- 生成されたコード表示 -->
-     <div id="shareCodeResult" style="display: none; margin-top: 15px; background: rgba(255, 255, 255, 0.25); border-radius: 8px; padding: 15px;">
-     <p style="color: white; margin: 0 0 10px 0; font-size: 14px;">生成されたコード:</p>
-     <div style="display: flex; flex-direction: column; gap: 10px;">
-     <input type="text" id="shareCodeOutput" readonly style="width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; text-align: center; letter-spacing: 4px; background: white; color: #667eea; box-sizing: border-box;">
-     <button id="copyShareCodeBtn" style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-        📋 コピー
-    </button>
-    </div>
-    </div>
-    </div>
-    
-    <!-- コードから復元 -->
-    <div style="background: rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 20px; backdrop-filter: blur(10px);">
       <h3 style="color: white; margin: 0 0 12px 0; font-size: 16px;">📥 コードから復元</h3>
       <p style="color: rgba(255, 255, 255, 0.9); margin: 0 0 15px 0; font-size: 14px;">
         6桁のコードを入力してデータを復元
       </p>
       
-     <div style="display: flex; flex-direction: column; gap: 10px;">
-  <input type="text" id="shareCodeInput" placeholder="AB12CD" maxlength="6" style="width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; text-transform: uppercase; text-align: center; letter-spacing: 4px; font-weight: 600; box-sizing: border-box;">
-  <button id="restoreShareCodeBtn" style="width: 100%; padding: 12px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
-    復元
-  </button>
-</div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <input type="text" id="shareCodeInput" placeholder="AB12CD" maxlength="6" style="width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; text-transform: uppercase; text-align: center; letter-spacing: 4px; font-weight: 600; box-sizing: border-box;">
+        <button id="restoreShareCodeBtn" style="width: 100%; padding: 12px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+          復元
+        </button>
+      </div>
+    </div>
+    
+    <!-- コード生成（下に移動） -->
+    <div style="background: rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 20px; backdrop-filter: blur(10px);">
+      <h3 style="color: white; margin: 0 0 12px 0; font-size: 16px;">📤 コードを生成</h3>
+      <p style="color: rgba(255, 255, 255, 0.9); margin: 0 0 15px 0; font-size: 14px;">
+        選択した品目を保存して、6桁のコードを生成します
+      </p>
+      
+      <button id="generateShareCodeBtn" style="width: 100%; padding: 14px; background: white; color: #667eea; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s;">
+        コードを生成
+      </button>
+      
+      <!-- 生成されたコード表示 -->
+      <div id="shareCodeResult" style="display: none; margin-top: 15px; background: rgba(255, 255, 255, 0.25); border-radius: 8px; padding: 15px;">
+        <p style="color: white; margin: 0 0 10px 0; font-size: 14px;">生成されたコード:</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="text" id="shareCodeOutput" readonly style="width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; text-align: center; letter-spacing: 4px; background: white; color: #667eea; box-sizing: border-box;">
+          <button id="copyShareCodeBtn" style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            📋 コピー
+          </button>
+        </div>
+      </div>
     </div>
   </div>
   
