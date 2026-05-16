@@ -3145,20 +3145,38 @@ generatePDF();
 
 // PDF生成関数
 async function generatePDF() {
-if (selectedItems.length === 0) {
-alert('印刷する品目がありません。まず福祉用具を選択してください。');
-return;
-}
+  if (selectedItems.length === 0) {
+    alert('印刷する品目がありません。まず福祉用具を選択してください。');
+    return;
+  }
 
-try {
-elements.printBtn.disabled = true;
-elements.printBtn.textContent = '生成中...';
+  try {
+    elements.printBtn.disabled = true;
+    elements.printBtn.textContent = '生成中...';
+    
+    // 共有コード生成
+    let shareCode = '';
+    try {
+      const shareData = {
+        salesPerson: currentSalesPerson || '未設定',
+        homeName: elements.homeNameInput?.value || '',
+        contractorName: elements.contractorNameInput?.value || '',
+        remarks: elements.remarksInput?.value || '',
+        burdenRate: burdenRate,
+        items: selectedItems,
+        description: ''
+      };
+      shareCode = await FirebaseDB.saveSharedCode(shareData, true);
+      console.log('✅ 共有コード生成:', shareCode);
+    } catch (error) {
+      console.error('共有コード生成エラー:', error);
+    }
 
 const { jsPDF } = window.jspdf;
 const pdf = new jsPDF('p', 'mm', 'a4');
 
 // 1ページ目と2ページ目を個別に生成
-const printContent = createPrintHTML();
+const printContent = createPrintHTML(shareCode);
 const parser = new DOMParser();
 const doc = parser.parseFromString(printContent, 'text/html');
 const pages = doc.querySelectorAll('.pdf-page');
@@ -3224,8 +3242,8 @@ elements.printBtn.innerHTML = '📄 印刷';
 }
 
 // 印刷用HTML作成関数
-function createPrintHTML() {
-const currentDate = new Date().toLocaleDateString('ja-JP');
+function createPrintHTML(shareCode = '') {
+  const currentDate = new Date().toLocaleDateString('ja-JP');
 
 // 通常の点数計算（実費以外）
 const normalPoints = selectedItems
@@ -3391,6 +3409,14 @@ ${generateItemsHTML(page1Items, 0)}
 
 // 11件以下の場合は1ページ目に署名欄と文言を追加
 if (!needsSecondPage) {
+  // 共有コード表示を追加
+  if (shareCode) {
+    page1HTML += `
+<div style="text-align: right; margin-top: 10px; font-size: 8px; color: #999;">
+共有コード: ${shareCode}
+</div>
+`;
+  }
 page1HTML += signatureAndFooter;
 }
 
@@ -3424,6 +3450,12 @@ ${logoHTML}
 ${generateItemsHTML(page2Items, itemsPerPage)}
 </tbody>
 </table>
+
+${shareCode ? `
+<div style="text-align: right; margin-top: 10px; font-size: 8px; color: #999;">
+共有コード: ${shareCode}
+</div>
+` : ''}
 
 ${signatureAndFooter}
 </div>
