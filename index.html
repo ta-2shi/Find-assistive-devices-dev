@@ -3859,7 +3859,18 @@ async function restoreFromShareCode() {
     }, 100);
     
     // 利用者モードに切り替え
-    document.getElementById('userMode').click();
+    switchMode(false);
+    
+    // 共有セクションを非表示、検索セクションを表示
+    document.getElementById('spellSection').style.display = 'none';
+    document.querySelector('.search-container').style.display = 'block';
+    document.querySelector('.favorite-section').style.display = 'block';
+    document.getElementById('searchResults').style.display = 'block';
+    
+    // ドロワーメニューの状態を更新
+    document.querySelectorAll('.drawer-menu-item').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('drawerUserMode').classList.add('active');
+    document.getElementById('currentModeName').textContent = '利用者モード';
     
     // モバイルの場合、「計算結果を表示」ボタンを再表示
     if (window.innerWidth < 768) {
@@ -3876,7 +3887,8 @@ async function restoreFromShareCode() {
     input.value = '';
     
   } catch (error) {
-    showError(error.message || '共有コードの読み込みに失敗しました。');
+    // エラー時にポップアップ表示
+    alert('❌ エラー: ' + (error.message || '共有コードが見つかりません。コードを確認してください。'));
     console.error('共有コード復元エラー:', error);
   }
 }
