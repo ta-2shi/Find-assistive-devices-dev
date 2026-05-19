@@ -2634,7 +2634,9 @@ return;
 elements.searchResults.innerHTML = items.map(item => {
 const selectedItem = selectedItems.find(selected => selected.id === item.id);
 const isSelected = !!selectedItem;
-const quantity = selectedItem ? selectedItem.quantity : 0;
+const quantityFull = selectedItem ? (selectedItem.quantityFull || 0) : 0;
+const quantityHalf = selectedItem ? (selectedItem.quantityHalf || 0) : 0;
+const quantity = quantityFull + quantityHalf;
 
 const favoriteIcon = isAdminMode ? `
 <span class="favorite-icon ${item.isFavorite ? 'active' : ''}" onclick="toggleFavorite('${item.id}')" title="お気に入り">
@@ -2882,19 +2884,25 @@ showError('データの削除に失敗しました');
 function updateCalculator() {
 // 通常の点数計算（実費以外）
 const normalPoints = selectedItems
-.filter(item => !item.isActualCost)
-.reduce((sum, item) => {
-const itemTotal = item.points * item.quantity;
-return sum + (item.isHalfMonth ? itemTotal / 2 : itemTotal);
-}, 0);
+  .filter(item => !item.isActualCost)
+  .reduce((sum, item) => {
+    const quantityFull = item.quantityFull || 0;
+    const quantityHalf = item.quantityHalf || 0;
+    const fullTotal = item.points * quantityFull;
+    const halfTotal = (item.points / 2) * quantityHalf;
+    return sum + fullTotal + halfTotal;
+  }, 0);
 
 // 実費の合計計算
 const actualCostTotal = selectedItems
-.filter(item => item.isActualCost)
-.reduce((sum, item) => {
-const itemTotal = item.points * item.quantity;
-return sum + (item.isHalfMonth ? itemTotal / 2 : itemTotal);
-}, 0);
+  .filter(item => item.isActualCost)
+  .reduce((sum, item) => {
+    const quantityFull = item.quantityFull || 0;
+    const quantityHalf = item.quantityHalf || 0;
+    const fullTotal = item.points * quantityFull;
+    const halfTotal = (item.points / 2) * quantityHalf;
+    return sum + fullTotal + halfTotal;
+  }, 0);
 
 // 表示更新（上部は点数表示）
 elements.totalPointsElement.textContent = `${normalPoints.toLocaleString()}点`;
