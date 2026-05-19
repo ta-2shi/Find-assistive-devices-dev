@@ -3373,19 +3373,25 @@ function createPrintHTML(shareCode = '') {
 
 // 通常の点数計算（実費以外）
 const normalPoints = selectedItems
-.filter(item => !item.isActualCost)
-.reduce((sum, item) => {
-const itemTotal = item.points * item.quantity;
-return sum + (item.isHalfMonth ? itemTotal / 2 : itemTotal);
-}, 0);
+  .filter(item => !item.isActualCost)
+  .reduce((sum, item) => {
+    const quantityFull = item.quantityFull || 0;
+    const quantityHalf = item.quantityHalf || 0;
+    const fullTotal = item.points * quantityFull;
+    const halfTotal = (item.points / 2) * quantityHalf;
+    return sum + fullTotal + halfTotal;
+  }, 0);
 
 // 実費の合計計算
 const actualCostTotal = selectedItems
-.filter(item => item.isActualCost)
-.reduce((sum, item) => {
-const itemTotal = item.points * item.quantity;
-return sum + (item.isHalfMonth ? itemTotal / 2 : itemTotal);
-}, 0);
+  .filter(item => item.isActualCost)
+  .reduce((sum, item) => {
+    const quantityFull = item.quantityFull || 0;
+    const quantityHalf = item.quantityHalf || 0;
+    const fullTotal = item.points * quantityFull;
+    const halfTotal = (item.points / 2) * quantityHalf;
+    return sum + fullTotal + halfTotal;
+  }, 0);
 
 // 総合計（負担割合を適用）
 const totalAmount = (normalPoints * burdenRate) + actualCostTotal;
