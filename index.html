@@ -2085,40 +2085,73 @@ async function updateDatabaseCache() {
   }
 }
 
+// 古いデータ形式を新形式に変換
+function migrateItemData(item) {
+  // 既に新形式の場合
+  if (item.quantityFull !== undefined || item.quantityHalf !== undefined) {
+    return {
+      ...item,
+      quantityFull: item.quantityFull || 0,
+      quantityHalf: item.quantityHalf || 0
+    };
+  }
+  
+  // 古い形式を変換
+  if (item.quantity !== undefined) {
+    return {
+      ...item,
+      quantityFull: item.isHalfMonth ? 0 : item.quantity,
+      quantityHalf: item.isHalfMonth ? item.quantity : 0,
+      // 古いプロパティは残しておく（互換性のため）
+      quantity: item.quantity,
+      isHalfMonth: item.isHalfMonth
+    };
+  }
+  
+  // デフォルト
+  return {
+    ...item,
+    quantityFull: 1,
+    quantityHalf: 0
+  };
+}
+  
 // 選択済みアイテムの読み込み
 function loadSelectedItems() {
-try {
-const saved = sessionStorage.getItem('selectedWelfareItems');
-if (saved) {
-selectedItems = JSON.parse(saved);
-updateCalculator();
-updateMobileCount();
-}
-} catch (error) {
-selectedItems = [];
-}
+  try {
+    const saved = sessionStorage.getItem('selectedWelfareItems');
+    if (saved) {
+      const items = JSON.parse(saved);
+      // 古いデータを新形式に変換
+      selectedItems = items.map(item => migrateItemData(item));
+      updateCalculator();
+      updateMobileCount();
+    }
+  } catch (error) {
+    selectedItems = [];
+  }
 }
 
 // 選択済みアイテムの保存
 function saveSelectedItems() {
-try {
-sessionStorage.setItem('selectedWelfareItems', JSON.stringify(selectedItems));
-} catch (error) {
-console.error('選択アイテム保存エラー:', error);
-}
+  try {
+    sessionStorage.setItem('selectedWelfareItems', JSON.stringify(selectedItems));
+  } catch (error) {
+    console.error('選択アイテム保存エラー:', error);
+  }
 }
 
 // 備考の保存
 function saveRemarks() {
-try {
-sessionStorage.setItem('remarksText', elements.remarksInput.value);
-sessionStorage.setItem('homeName', elements.homeNameInput.value);
-sessionStorage.setItem('contractorName', elements.contractorNameInput.value);
-} catch (error) {
-console.error('備考保存エラー:', error);
+  try {
+    sessionStorage.setItem('remarksText', elements.remarksInput.value);
+    sessionStorage.setItem('homeName', elements.homeNameInput.value);
+    sessionStorage.setItem('contractorName', elements.contractorNameInput.value);
+  } catch (error) {
+    console.error('備考保存エラー:', error);
+  }
 }
-}
-
+  
 // 備考の読み込み（初期化時は何もしない）
 function loadRemarks() {
 // 入力欄は動的に生成されるため、ここでは何もしない
@@ -2636,47 +2669,70 @@ ${adminButtons}
 }).join('');
 }
 
-// アイテム操作
 function addItem(itemId) {
-const item = welfareEquipment.find(item => item.id === itemId);
-if (!item) return;
-
-const existingIndex = selectedItems.findIndex(selected => selected.id === itemId);
-if (existingIndex !== -1) {
-selectedItems[existingIndex].quantity += 1;
-} else {
-selectedItems.push({
-...item,
-quantity: 1,
-isHalfMonth: false
-});
+  const item = welfareEquipment.find(item => item.id === itemId);
+  if (!item) return;
+  const existingIndex = selectedItems.findIndex(selected => selected.id === itemId);
+  if (existingIndex !== -1) {
+    // 既存アイテムの月額数量を増やす
+    selectedItems[existingIndex].quantityFull = (selectedItems[existingIndex].quantityFull || 0) + 1;
+  } else {
+    selectedItems.push({
+      ...item,
+      quantityFull: 1,  // 月額: 1個
+      quantityHalf: 0   // 半月: 0個
+    });
+  }
+  updateCalculator();
+  updateMobileCount();
+  saveSelectedItems();
+  displaySearchResults(filteredItems);
 }
 
-updateCalculator();
-updateMobileCount();
-saveSelectedItems();
-displaySearchResults(filteredItems);
+// 月額数量の変更
+function updateQuantityFull(itemId, change) {
+  const itemIndex = selectedItems.findIndex(item => item.id === itemId);
+  if (itemIndex === -1) return;
+  
+  const newQuantity = (selectedItems[itemIndex].quantityFull || 0) + change;
+  
+  // 0未満にはしない
+  if (newQuantity < 0) return;
+  
+  // 両方0になる場合は品目を削除
+  if (newQuantity === 0 && (selectedItems[itemIndex].quantityHalf || 0) === 0) {
+    selectedItems.splice(itemIndex, 1);
+  } else {
+    selectedItems[itemIndex].quantityFull = newQuantity;
+  }
+  
+  updateCalculator();
+  updateMobileCount();
+  saveSelectedItems();
+  displaySearchResults(filteredItems);
 }
 
-function updateQuantity(itemId, change) {
-const itemIndex = selectedItems.findIndex(item => item.id === itemId);
-if (itemIndex === -1) return;
-
-selectedItems[itemIndex].quantity = Math.max(1, selectedItems[itemIndex].quantity + change);
-updateCalculator();
-updateMobileCount();
-saveSelectedItems();
-displaySearchResults(filteredItems);
-}
-
-function toggleHalfMonth(itemId) {
-const itemIndex = selectedItems.findIndex(item => item.id === itemId);
-if (itemIndex === -1) return;
-
-selectedItems[itemIndex].isHalfMonth = !selectedItems[itemIndex].isHalfMonth;
-updateCalculator();
-saveSelectedItems();
-displaySearchResults(filteredItems);
+// 半月数量の変更
+function updateQuantityHalf(itemId, change) {
+  const itemIndex = selectedItems.findIndex(item => item.id === itemId);
+  if (itemIndex === -1) return;
+  
+  const newQuantity = (selectedItems[itemIndex].quantityHalf || 0) + change;
+  
+  // 0未満にはしない
+  if (newQuantity < 0) return;
+  
+  // 両方0になる場合は品目を削除
+  if (newQuantity === 0 && (selectedItems[itemIndex].quantityFull || 0) === 0) {
+    selectedItems.splice(itemIndex, 1);
+  } else {
+    selectedItems[itemIndex].quantityHalf = newQuantity;
+  }
+  
+  updateCalculator();
+  updateMobileCount();
+  saveSelectedItems();
+  displaySearchResults(filteredItems);
 }
 
 // お気に入りトグル
@@ -2859,41 +2915,60 @@ elements.selectedItemsContainer.innerHTML = `
 
 } else {
 elements.selectedItemsContainer.innerHTML = selectedItems.map((item, index) => {
-const categoryDisplay = item.category ? `<div class="selected-item-category" style="color: #059669; font-size: 11px; font-weight: 600; margin-bottom: 3px;">品目: ${item.category}</div>` : '';
-const taisCodeDisplay = item.taisCode ? `<div class="selected-item-tais" style="color: #d97706; font-size: 11px; font-weight: 500; margin-top: 2px;">taisコード: ${item.taisCode}</div>` : '';
-const actualCostDisplay = item.isActualCost ? `<div class="selected-item-actual-cost" style="color: #dc2626; font-size: 10px; font-weight: 600; margin-top: 2px;">実費対象</div>` : '';
+  const categoryDisplay = item.category ? `<div class="selected-item-category" style="color: #059669; font-size: 11px; font-weight: 600; margin-bottom: 3px;">品目: ${item.category}</div>` : '';
+  const taisCodeDisplay = item.taisCode ? `<div class="selected-item-tais" style="color: #d97706; font-size: 11px; font-weight: 500; margin-top: 2px;">taisコード: ${item.taisCode}</div>` : '';
+  const actualCostDisplay = item.isActualCost ? `<div class="selected-item-actual-cost" style="color: #dc2626; font-size: 10px; font-weight: 600; margin-top: 2px;">実費対象</div>` : '';
 
-const pointsUnit = item.isActualCost ? '円' : '点';
-const totalUnit = item.isActualCost ? '円' : '点';
-const fullTotal = item.points * item.quantity;
-const displayTotal = item.isHalfMonth ? fullTotal / 2 : fullTotal;
-const halfMonthBadge = item.isHalfMonth ? '<span class="half-month-badge">半月</span>' : '';
-const halfMonthLabel = item.isHalfMonth ? ' (半月)' : '';
+  const pointsUnit = item.isActualCost ? '円' : '点';
+  
+  // 新形式の計算
+  const quantityFull = item.quantityFull || 0;
+  const quantityHalf = item.quantityHalf || 0;
+  const fullTotal = item.points * quantityFull;
+  const halfTotal = (item.points / 2) * quantityHalf;
+  const displayTotal = fullTotal + halfTotal;
 
-return `
-<div class="selected-item" draggable="${isReorderMode}" data-index="${index}" data-item-id="${item.id}">
-<div class="drag-handle">⋮⋮</div>
-<div class="selected-item-info">
-${categoryDisplay}
-<div class="selected-item-name">${item.name}${halfMonthBadge}</div>
-<div class="selected-item-points">${item.points}${pointsUnit}/月 × ${item.quantity} = ${displayTotal}${totalUnit}${halfMonthLabel}</div>
-${taisCodeDisplay}
-${actualCostDisplay}
-</div>
-<div class="half-month-checkbox">
-<input type="checkbox" id="half-${item.id}" ${item.isHalfMonth ? 'checked' : ''} onchange="toggleHalfMonth('${item.id}')">
-<label for="half-${item.id}" style="cursor: pointer;">半月</label>
-</div>
-<div class="quantity-controls">
-<button class="quantity-btn" onclick="updateQuantity('${item.id}', -1)" ${item.quantity <= 1 ? 'disabled' : ''}>−</button>
-<div class="quantity-display">${item.quantity}</div>
-<button class="quantity-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
-</div>
-<button class="remove-btn" onclick="removeItem('${item.id}')">×</button>
-</div>
-`;
+  return `
+    <div class="selected-item" draggable="${isReorderMode}" data-index="${index}" data-item-id="${item.id}">
+      <div class="drag-handle">⋮⋮</div>
+      <div class="selected-item-info">
+        ${categoryDisplay}
+        <div class="selected-item-name">${item.name}</div>
+        <div class="selected-item-points">${item.points}${pointsUnit}/月</div>
+        ${taisCodeDisplay}
+        ${actualCostDisplay}
+        
+        <div style="margin-top: 12px; padding: 10px; background: #f9fafb; border-radius: 6px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="color: #374151; font-weight: 500;">月額:</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button class="quantity-btn" onclick="updateQuantityFull('${item.id}', -1)" ${quantityFull <= 0 ? 'disabled' : ''}>−</button>
+              <span style="min-width: 30px; text-align: center; font-weight: 600;">${quantityFull}</span>
+              <button class="quantity-btn" onclick="updateQuantityFull('${item.id}', 1)">+</button>
+              <span style="color: #6b7280; margin-left: 8px;">${fullTotal}${pointsUnit}</span>
+            </div>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #374181; font-weight: 500;">半月:</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button class="quantity-btn" onclick="updateQuantityHalf('${item.id}', -1)" ${quantityHalf <= 0 ? 'disabled' : ''}>−</button>
+              <span style="min-width: 30px; text-align: center; font-weight: 600;">${quantityHalf}</span>
+              <button class="quantity-btn" onclick="updateQuantityHalf('${item.id}', 1)">+</button>
+              <span style="color: #6b7280; margin-left: 8px;">${halfTotal}${pointsUnit}</span>
+            </div>
+          </div>
+          
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; text-align: right;">
+            <span style="color: #1e293b; font-weight: 600;">合計: ${displayTotal}${pointsUnit}</span>
+          </div>
+        </div>
+      </div>
+      <button class="remove-btn" onclick="removeItem('${item.id}')">×</button>
+    </div>
+  `;
 }).join('');
-
+  
 // 合計表示を追加（負担割合を適用した金額）
 const totalAmount = (normalPoints * burdenRate) + actualCostTotal;
 let summaryHTML = '<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e5e7eb;">';
@@ -3328,34 +3403,49 @@ const page2Items = needsSecondPage ? selectedItems.slice(itemsPerPage) : [];
 
 // 品目HTMLを生成する関数
 function generateItemsHTML(items, startIndex = 0) {
-return items.map((item, index) => {
-const fullTotal = item.points * item.quantity;
-const displayTotal = item.isHalfMonth ? fullTotal / 2 : fullTotal;
-const categoryDisplay = item.category ? item.category : '';
-const taisDisplay = (!item.isActualCost && item.taisCode) ? `<div style="color: #d97706; font-size: 12px; margin-top: 5px;">taisコード: ${item.taisCode}</div>` : '';
-const actualCostLabel = item.isActualCost ? `<div style="color: #dc2626; font-size: 11px; font-weight: 600; margin-top: 3px;">実費対象</div>` : '';
-const halfMonthLabel = item.isHalfMonth ? ' <span style="color: #f59e0b; font-weight: 600;">(半月)</span>' : '';
-const unit = item.isActualCost ? '円' : '点';
+  return items.map((item, index) => {
+    // 新形式の計算
+    const quantityFull = item.quantityFull || 0;
+    const quantityHalf = item.quantityHalf || 0;
+    const fullTotal = item.points * quantityFull;
+    const halfTotal = (item.points / 2) * quantityHalf;
+    const displayTotal = fullTotal + halfTotal;
     
-return `
-<tr style="border-bottom: 1px solid #e5e7eb;">
-<td style="padding: 8px; text-align: center; border-right: 1px solid #e5e7eb;">${startIndex + index + 1}</td>
-<td style="padding: 12px; border-right: 1px solid #e5e7eb;">
-<div style="font-weight: 600;">${categoryDisplay}</div>
-</td>
-<td style="padding: 12px; border-right: 1px solid #e5e7eb;">
-<div style="font-weight: 600; margin-bottom: 5px;">${item.name}</div>
-${taisDisplay}
-${actualCostLabel}
-</td>
-<td style="padding: 12px; text-align: center; border-right: 1px solid #e5e7eb;">${item.points}${unit}</td>
-<td style="padding: 12px; text-align: center; border-right: 1px solid #e5e7eb;">${item.quantity}</td>
-<td style="padding: 12px; text-align: center; font-weight: 600;">${displayTotal}${unit}${halfMonthLabel}</td>
-</tr>
-`;
-}).join('');
+    const categoryDisplay = item.category ? item.category : '';
+    const taisDisplay = (!item.isActualCost && item.taisCode) ? `<div style="color: #d97706; font-size: 12px; margin-top: 5px;">taisコード: ${item.taisCode}</div>` : '';
+    const actualCostLabel = item.isActualCost ? `<div style="color: #dc2626; font-size: 11px; font-weight: 600; margin-top: 3px;">実費対象</div>` : '';
+    const unit = item.isActualCost ? '円' : '点';
+    
+    // 数量の内訳表示
+    let quantityDisplay = '';
+    if (quantityFull > 0 && quantityHalf > 0) {
+      quantityDisplay = `${quantityFull + quantityHalf}<br><span style="font-size: 10px; color: #6b7280;">(月額${quantityFull} + 半月${quantityHalf})</span>`;
+    } else if (quantityFull > 0) {
+      quantityDisplay = `${quantityFull}`;
+    } else if (quantityHalf > 0) {
+      quantityDisplay = `${quantityHalf}<br><span style="font-size: 10px; color: #f59e0b;">(半月)</span>`;
+    } else {
+      quantityDisplay = '0';
+    }
+    
+    return `
+      <tr style="border-bottom: 1px solid #e5e7eb;">
+        <td style="padding: 8px; text-align: center; border-right: 1px solid #e5e7eb;">${startIndex + index + 1}</td>
+        <td style="padding: 12px; border-right: 1px solid #e5e7eb;">
+          <div style="font-weight: 600;">${categoryDisplay}</div>
+        </td>
+        <td style="padding: 12px; border-right: 1px solid #e5e7eb;">
+          <div style="font-weight: 600; margin-bottom: 5px;">${item.name}</div>
+          ${taisDisplay}
+          ${actualCostLabel}
+        </td>
+        <td style="padding: 12px; text-align: center; border-right: 1px solid #e5e7eb;">${item.points}${unit}</td>
+        <td style="padding: 12px; text-align: center; border-right: 1px solid #e5e7eb;">${quantityDisplay}</td>
+        <td style="padding: 12px; text-align: center; font-weight: 600;">${displayTotal}${unit}</td>
+      </tr>
+    `;
+  }).join('');
 }
-
 // 備考欄の取得
 const remarks = elements.remarksInput.value.trim();
 
@@ -3604,7 +3694,8 @@ function restoreFromHistory(id) {
   const item = history.find(h => h.id === id);
   if (!item) return;
   
-  selectedItems = JSON.parse(JSON.stringify(item.selectedItems));
+  const items = JSON.parse(JSON.stringify(item.selectedItems));
+  selectedItems = items.map(item => migrateItemData(item));
   burdenRate = item.burdenRate;
   
   document.querySelectorAll('.burden-btn').forEach(btn => {
@@ -3831,8 +3922,9 @@ async function restoreFromShareCode() {
     showInfo('データを読み込み中...');
     const data = await FirebaseDB.loadSharedCode(code);
     
-    // データを復元
-    selectedItems = data.items || [];
+    // データを復元（古いデータも変換）
+    const items = data.items || [];
+    selectedItems = items.map(item => migrateItemData(item));
     burdenRate = data.burdenRate || 1;
     
     // 負担割合ボタンを更新
