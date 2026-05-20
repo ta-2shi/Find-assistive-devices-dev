@@ -1658,9 +1658,19 @@ Excelファイルをアップロード
 <p>選択された品目がここに表示されます</p>
 </div>
 </div>
-<button class="print-btn" id="printBtn" style="width: 100%; padding: 12px; font-size: 14px; text-align: center;">
-📄 印刷
-</button>
+
+<!-- 全品半月チェックボックス -->
+      <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+        <input type="checkbox" id="allHalfMonthCheckbox" onchange="toggleAllHalfMonth()" style="width: 20px; height: 20px; cursor: pointer;">
+        <label for="allHalfMonthCheckbox" style="cursor: pointer; font-weight: 600; color: #856404; font-size: 14px; user-select: none;">
+          ☐ 全品半月
+        </label>
+      </div>
+      
+      <button class="print-btn" id="printBtn" style="width: 100%; padding: 12px; font-size: 14px; text-align: center;">
+        📄 印刷
+      </button>  
+
 </div>
 </div>
 </div>
@@ -2737,6 +2747,29 @@ function updateQuantityHalf(itemId, change) {
   displaySearchResults(filteredItems);
 }
 
+// 全品半月の切り替え
+function toggleAllHalfMonth() {
+  const checkbox = document.getElementById('allHalfMonthCheckbox');
+  const isChecked = checkbox.checked;
+  
+  selectedItems.forEach(item => {
+    const totalQuantity = (item.quantityFull || 0) + (item.quantityHalf || 0);
+    
+    if (isChecked) {
+      // 全て半月に変換
+      item.quantityFull = 0;
+      item.quantityHalf = totalQuantity;
+    } else {
+      // 全て月額に変換
+      item.quantityFull = totalQuantity;
+      item.quantityHalf = 0;
+    }
+  });
+  
+  updateCalculator();
+  updateMobileCount();
+  saveSelectedItems();
+}
 // お気に入りトグル
 async function toggleFavorite(itemId) {
 const item = welfareEquipment.find(item => item.id === itemId);
