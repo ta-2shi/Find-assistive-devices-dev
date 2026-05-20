@@ -3327,35 +3327,9 @@ async function generatePDF() {
     elements.printBtn.disabled = true;
     elements.printBtn.textContent = '生成中...';
     
-    // 共有コード生成
+    // 共有コードなしでPDF生成（暫定対応）
     let shareCode = '';
-    try {
-  console.log('🔑 共有コード生成開始...');
-  console.log('📦 shareData:', JSON.stringify({
-    salesPerson: currentSalesPerson || '未設定',
-    burdenRate: burdenRate,
-    itemsCount: selectedItems.length
-  }));
-  
-  const shareData = {
-    salesPerson: currentSalesPerson || '未設定',
-    homeName: elements.homeNameInput?.value || '',
-    contractorName: elements.contractorNameInput?.value || '',
-    remarks: elements.remarksInput?.value || '',
-    burdenRate: burdenRate,
-    items: selectedItems,
-    description: ''
-  };
-  
-  shareCode = await FirebaseDB.saveSharedCode(shareData, true);
-  console.log('✅ 共有コード生成完了:', shareCode);
-} catch (error) {
-  console.error('❌ 共有コード生成エラー:', error);
-  console.error('❌ エラー詳細:', error.message);
-  console.error('❌ エラースタック:', error.stack);
-  // エラーでもPDF生成は続行
-  console.log('⚠️ 共有コードなしでPDF生成を続行');
-}
+    console.log('⚠️ 共有コード生成をスキップ（デバッグ中）');
     
     // ライブラリの確認
     console.log('🔍 window.jspdf:', typeof window.jspdf);
