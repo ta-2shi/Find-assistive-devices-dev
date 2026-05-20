@@ -2701,7 +2701,6 @@ function addItem(itemId) {
   displaySearchResults(filteredItems);
 }
 
-// 月額数量の変更
 function updateQuantityFull(itemId, change) {
   const itemIndex = selectedItems.findIndex(item => item.id === itemId);
   if (itemIndex === -1) return;
@@ -2711,12 +2710,8 @@ function updateQuantityFull(itemId, change) {
   // 0未満にはしない
   if (newQuantity < 0) return;
   
-  // 両方0になる場合は品目を削除
-  if (newQuantity === 0 && (selectedItems[itemIndex].quantityHalf || 0) === 0) {
-    selectedItems.splice(itemIndex, 1);
-  } else {
-    selectedItems[itemIndex].quantityFull = newQuantity;
-  }
+  // 数量を更新（0でも削除しない）
+  selectedItems[itemIndex].quantityFull = newQuantity;
   
   updateCalculator();
   updateMobileCount();
@@ -2724,7 +2719,6 @@ function updateQuantityFull(itemId, change) {
   displaySearchResults(filteredItems);
 }
 
-// 半月数量の変更
 function updateQuantityHalf(itemId, change) {
   const itemIndex = selectedItems.findIndex(item => item.id === itemId);
   if (itemIndex === -1) return;
@@ -2734,12 +2728,8 @@ function updateQuantityHalf(itemId, change) {
   // 0未満にはしない
   if (newQuantity < 0) return;
   
-  // 両方0になる場合は品目を削除
-  if (newQuantity === 0 && (selectedItems[itemIndex].quantityFull || 0) === 0) {
-    selectedItems.splice(itemIndex, 1);
-  } else {
-    selectedItems[itemIndex].quantityHalf = newQuantity;
-  }
+  // 数量を更新（0でも削除しない）
+  selectedItems[itemIndex].quantityHalf = newQuantity;
   
   updateCalculator();
   updateMobileCount();
