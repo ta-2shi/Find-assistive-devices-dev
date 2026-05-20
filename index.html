@@ -3375,12 +3375,15 @@ async function generatePDF() {
       printElement.style.padding = '10px 40px 40px 40px';
       printElement.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       document.body.appendChild(printElement);
+      console.log(`✅ ページ ${i + 1} DOM追加完了`);
 
       // レンダリング待機
+      console.log(`⏳ ページ ${i + 1} レンダリング待機...`);
       await new Promise(resolve => setTimeout(resolve, 200));
+      console.log(`✅ ページ ${i + 1} レンダリング完了`);
 
-      console.log(`🖼️ ページ ${i + 1} html2canvas実行中...`);
       // html2canvasで画像に変換
+      console.log(`🖼️ ページ ${i + 1} canvas変換開始...`);
       const canvas = await html2canvas(printElement, {
         scale: 1.5,
         useCORS: true,
@@ -3391,38 +3394,45 @@ async function generatePDF() {
       });
       console.log(`✅ ページ ${i + 1} canvas変換完了`);
 
-// 一時的な要素を削除
-document.body.removeChild(printElement);
+      // 一時的な要素を削除
+      document.body.removeChild(printElement);
+      console.log(`✅ ページ ${i + 1} DOM削除完了`);
 
-// 画像を圧縮
-const imgData = canvas.toDataURL('image/jpeg', 0.7);
-const imgWidth = 210;
-const pageHeight = 297;
-const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // 画像を圧縮
+      const imgData = canvas.toDataURL('image/jpeg', 0.7);
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-// 2ページ目以降は新しいページを追加
-if (i > 0) {
-pdf.addPage();
-}
+      // 2ページ目以降は新しいページを追加
+      if (i > 0) {
+        pdf.addPage();
+      }
 
-// PDFに画像を追加
-pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'MEDIUM');
-}
+      // PDFに画像を追加
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'MEDIUM');
+      console.log(`✅ ページ ${i + 1} PDF追加完了`);
+    }
 
-// ファイル名生成
-const currentDate = new Date().toLocaleDateString('ja-JP');
-const filename = `福祉用具レンタル搬入完了書_${currentDate.replace(/\//g, '')}.pdf`;
+    // ファイル名生成
+    const currentDate = new Date().toLocaleDateString('ja-JP');
+    const filename = `福祉用具レンタル搬入完了書_${currentDate.replace(/\//g, '')}.pdf`;
 
-// PDF保存
-pdf.save(filename);
+    // PDF保存
+    console.log('💾 PDF保存中...', filename);
+    pdf.save(filename);
+    console.log('✅ PDF保存完了');
 
-} catch (error) {
-console.error('PDF生成エラー:', error);
-alert('PDF生成中にエラーが発生しました。ブラウザが対応していない可能性があります。');
-} finally {
-elements.printBtn.disabled = false;
-elements.printBtn.innerHTML = '📄 印刷';
-}
+  } catch (error) {
+    console.error('❌ PDF生成エラー:', error);
+    console.error('❌ エラー詳細:', error.message);
+    console.error('❌ スタック:', error.stack);
+    alert('PDF生成エラー: ' + error.message);
+  } finally {
+    elements.printBtn.disabled = false;
+    elements.printBtn.innerHTML = '📄 印刷';
+    console.log('🏁 PDF生成処理終了');
+  }
 }
 
 // 印刷用HTML作成関数
