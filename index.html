@@ -3300,18 +3300,24 @@ generatePDF();
 
 // PDF生成関数
 async function generatePDF() {
+  console.log('📄 PDF生成開始');
+  
   if (selectedItems.length === 0) {
     alert('印刷する品目がありません。まず福祉用具を選択してください。');
     return;
   }
-
+  
   try {
+    console.log('✅ 品目数:', selectedItems.length);
+    console.log('✅ selectedItems:', JSON.stringify(selectedItems, null, 2));
+    
     elements.printBtn.disabled = true;
     elements.printBtn.textContent = '生成中...';
     
     // 共有コード生成
     let shareCode = '';
     try {
+      console.log('🔑 共有コード生成開始...');
       const shareData = {
         salesPerson: currentSalesPerson || '未設定',
         homeName: elements.homeNameInput?.value || '',
@@ -3322,45 +3328,68 @@ async function generatePDF() {
         description: ''
       };
       shareCode = await FirebaseDB.saveSharedCode(shareData, true);
-      console.log('✅ 共有コード生成:', shareCode);
+      console.log('✅ 共有コード生成完了:', shareCode);
     } catch (error) {
-      console.error('共有コード生成エラー:', error);
+      console.error('❌ 共有コード生成エラー:', error);
     }
+    
+    // ライブラリの確認
+    console.log('🔍 window.jspdf:', typeof window.jspdf);
+    console.log('🔍 window.html2canvas:', typeof window.html2canvas);
+    
+    if (!window.jspdf) {
+      throw new Error('jsPDFが読み込まれていません');
+    }
+    if (!window.html2canvas) {
+      throw new Error('html2canvasが読み込まれていません');
+    }
+    
+    console.log('📦 jsPDF取得中...');
+    const { jsPDF } = window.jspdf;
+    console.log('✅ jsPDF取得完了');
+    
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    console.log('✅ PDF作成完了');
 
-const { jsPDF } = window.jspdf;
-const pdf = new jsPDF('p', 'mm', 'a4');
+    // 1ページ目と2ページ目を個別に生成
+    console.log('📝 HTML生成中...');
+    const printContent = createPrintHTML(shareCode);
+    console.log('✅ HTML生成完了');
+    
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(printContent, 'text/html');
+    const pages = doc.querySelectorAll('.pdf-page');
+    console.log('✅ ページ数:', pages.length);
 
-// 1ページ目と2ページ目を個別に生成
-const printContent = createPrintHTML(shareCode);
-const parser = new DOMParser();
-const doc = parser.parseFromString(printContent, 'text/html');
-const pages = doc.querySelectorAll('.pdf-page');
+    for (let i = 0; i < pages.length; i++) {
+      console.log(`📄 ページ ${i + 1} 処理中...`);
+      
+      // 各ページを個別に処理
+      const printElement = document.createElement('div');
+      printElement.innerHTML = pages[i].outerHTML;
+      printElement.style.position = 'absolute';
+      printElement.style.left = '-9999px';
+      printElement.style.top = '0';
+      printElement.style.width = '794px';
+      printElement.style.backgroundColor = 'white';
+      printElement.style.padding = '10px 40px 40px 40px';
+      printElement.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      document.body.appendChild(printElement);
 
-for (let i = 0; i < pages.length; i++) {
-// 各ページを個別に処理
-const printElement = document.createElement('div');
-printElement.innerHTML = pages[i].outerHTML;
-printElement.style.position = 'absolute';
-printElement.style.left = '-9999px';
-printElement.style.top = '0';
-printElement.style.width = '794px';
-printElement.style.backgroundColor = 'white';
-printElement.style.padding = '10px 40px 40px 40px';
-printElement.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-document.body.appendChild(printElement);
+      // レンダリング待機
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-// レンダリング待機
-await new Promise(resolve => setTimeout(resolve, 200));
-
-// html2canvasで画像に変換
-const canvas = await html2canvas(printElement, {
-scale: 1.5,
-useCORS: true,
-backgroundColor: '#ffffff',
-width: 794,
-allowTaint: true,
-logging: false
-});
+      console.log(`🖼️ ページ ${i + 1} html2canvas実行中...`);
+      // html2canvasで画像に変換
+      const canvas = await html2canvas(printElement, {
+        scale: 1.5,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: 794,
+        allowTaint: true,
+        logging: false
+      });
+      console.log(`✅ ページ ${i + 1} canvas変換完了`);
 
 // 一時的な要素を削除
 document.body.removeChild(printElement);
