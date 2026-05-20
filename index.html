@@ -1926,34 +1926,47 @@ throw error;
 }
 },
  async saveSharedCode(data, isPermanent = true) {
-    try {
-      const code = this.generateShareCode();
-      const sharedData = {
-        code: code,
-        salesPerson: data.salesPerson || '',
-        homeName: data.homeName || '',
-        contractorName: data.contractorName || '',
-        remarks: data.remarks || '',
-        burdenRate: data.burdenRate || 1,
-        items: data.items || [],
-        createdBy: data.salesPerson || '',
-        createdAt: new Date(),
-        expiresAt: isPermanent ? null : new Date(Date.now() + 24 * 60 * 60 * 1000),
-        description: data.description || '',
-        lastAccessedAt: new Date()
-      };
-      
-      await window.firestore.addDoc(
-        window.firestore.collection(window.db, 'shared_codes'),
-        sharedData
-      );
-      console.log('✅ 共有コード保存:', code);
-      return code;
-    } catch (error) {
-      console.error('共有コード保存エラー:', error);
-      throw error;
-    }
-  },
+  try {
+    console.log('💾 saveSharedCode開始');
+    console.log('📦 入力データ:', JSON.stringify(data, null, 2));
+    
+    const code = this.generateShareCode();
+    console.log('✅ コード生成完了:', code);
+    
+    const sharedData = {
+      code: code,
+      salesPerson: data.salesPerson || '',
+      homeName: data.homeName || '',
+      contractorName: data.contractorName || '',
+      remarks: data.remarks || '',
+      burdenRate: data.burdenRate || 1,
+      items: data.items || [],
+      createdBy: data.salesPerson || '',
+      createdAt: new Date(),
+      expiresAt: isPermanent ? null : new Date(Date.now() + 24 * 60 * 60 * 1000),
+      description: data.description || '',
+      lastAccessedAt: new Date()
+    };
+    
+    console.log('📝 Firestore保存データ準備完了');
+    console.log('🔍 window.firestore:', typeof window.firestore);
+    console.log('🔍 window.db:', typeof window.db);
+    
+    await window.firestore.addDoc(
+      window.firestore.collection(window.db, 'shared_codes'),
+      sharedData
+    );
+    
+    console.log('✅ 共有コード保存完了:', code);
+    return code;
+  } catch (error) {
+    console.error('❌ 共有コード保存エラー:', error);
+    console.error('❌ エラーメッセージ:', error.message);
+    console.error('❌ エラーコード:', error.code);
+    console.error('❌ エラースタック:', error.stack);
+    throw error;
+  }
+},
   
  async loadSharedCode(code) {
     try {
