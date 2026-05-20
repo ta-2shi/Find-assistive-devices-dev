@@ -2940,9 +2940,12 @@ elements.selectedItemsContainer.innerHTML = selectedItems.map((item, index) => {
     <div class="selected-item" draggable="${isReorderMode}" data-index="${index}" data-item-id="${item.id}">
       <div class="drag-handle">⋮⋮</div>
       <div class="selected-item-info">
-        ${categoryDisplay}
-        <div class="selected-item-name">${item.name}</div>
-        <div class="selected-item-points">${item.points}${pointsUnit}/月</div>
+  ${categoryDisplay}
+  <div class="selected-item-name">
+    <span style="display: inline-block; background: #667eea; color: white; border-radius: 4px; padding: 2px 8px; font-size: 12px; font-weight: 600; margin-right: 8px;">${index + 1}</span>
+    ${item.name}
+  </div>
+  <div class="selected-item-points">${item.points}${pointsUnit}/月</div>
         ${taisCodeDisplay}
         ${actualCostDisplay}
         
