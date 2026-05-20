@@ -3042,8 +3042,12 @@ setupDragAndDrop();
 }
 
 function updateMobileCount() {
-const totalItems = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
-elements.mobileCountSpan.textContent = totalItems;
+  const totalItems = selectedItems.reduce((sum, item) => {
+    const quantityFull = item.quantityFull || 0;
+    const quantityHalf = item.quantityHalf || 0;
+    return sum + quantityFull + quantityHalf;
+  }, 0);
+  elements.mobileCountSpan.textContent = totalItems;
 }
 
 // ドラッグ&ドロップ機能のセットアップ
