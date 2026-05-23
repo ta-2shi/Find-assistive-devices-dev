@@ -3218,12 +3218,14 @@ function handleClearAll() {
   
 // 削除ボタンのイベント（一度だけ実行）
   const handleConfirm = () => {
+    // まず選択アイテムをクリア
     selectedItems = [];
     
-    // sessionStorageをクリア
+    // sessionStorageを完全にクリア
     sessionStorage.removeItem('homeName');
     sessionStorage.removeItem('contractorName');
     sessionStorage.removeItem('remarksText');
+    sessionStorage.removeItem('selectedWelfareItems');
     
     // 全品半月チェックボックスをOFFに
     const allHalfMonthCheckbox = document.getElementById('allHalfMonthCheckbox');
@@ -3231,10 +3233,23 @@ function handleClearAll() {
       allHalfMonthCheckbox.checked = false;
     }
     
+    // 画面を更新
     updateCalculator();
     updateMobileCount();
     saveSelectedItems();
     displaySearchResults(filteredItems);
+    
+    // 更新後に入力欄を強制的にクリア
+    setTimeout(() => {
+      const homeInput = document.getElementById('homeNameInput');
+      const contractorInput = document.getElementById('contractorNameInput');
+      const remarksInput = document.getElementById('remarksInput');
+      
+      if (homeInput) homeInput.value = '';
+      if (contractorInput) contractorInput.value = '';
+      if (remarksInput) remarksInput.value = '';
+    }, 100);
+    
     modal.classList.remove('active');
     
     // イベントリスナーを削除
