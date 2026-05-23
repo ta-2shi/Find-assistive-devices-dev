@@ -3079,26 +3079,34 @@ const contractorNameInput = document.getElementById('contractorNameInput');
 const remarksInput = document.getElementById('remarksInput');
 
 if (homeNameInput) {
-  // 既存の要素から現在の値を取得
-  const currentHomeName = elements.homeNameInput?.value || '';
-  const currentContractorName = elements.contractorNameInput?.value || '';
-  const currentRemarks = elements.remarksInput?.value || '';
-  
-  // 現在の値がある場合はそれを使用、なければsessionStorageから復元
-  homeNameInput.value = currentHomeName || sessionStorage.getItem('homeName') || '';
+  // selectedItemsが0の場合は空にする、それ以外は既存値→sessionStorage
+  if (selectedItems.length === 0) {
+    homeNameInput.value = '';
+  } else {
+    const currentHomeName = elements.homeNameInput?.value || '';
+    homeNameInput.value = currentHomeName || sessionStorage.getItem('homeName') || '';
+  }
   homeNameInput.addEventListener('input', saveRemarks);
 }
 if (contractorNameInput) {
-  const currentContractorName = elements.contractorNameInput?.value || '';
-  contractorNameInput.value = currentContractorName || sessionStorage.getItem('contractorName') || '';
+  if (selectedItems.length === 0) {
+    contractorNameInput.value = '';
+  } else {
+    const currentContractorName = elements.contractorNameInput?.value || '';
+    contractorNameInput.value = currentContractorName || sessionStorage.getItem('contractorName') || '';
+  }
   contractorNameInput.addEventListener('input', saveRemarks);
 }
 if (remarksInput) {
-  const currentRemarks = elements.remarksInput?.value || '';
-  remarksInput.value = currentRemarks || sessionStorage.getItem('remarksText') || '';
+  if (selectedItems.length === 0) {
+    remarksInput.value = '';
+  } else {
+    const currentRemarks = elements.remarksInput?.value || '';
+    remarksInput.value = currentRemarks || sessionStorage.getItem('remarksText') || '';
+  }
   remarksInput.addEventListener('input', saveRemarks);
 }
-
+  
 // 要素参照を更新
 elements.homeNameInput = homeNameInput;
 elements.contractorNameInput = contractorNameInput;
