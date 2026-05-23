@@ -3216,12 +3216,21 @@ function handleClearAll() {
   // モーダルを表示
   modal.classList.add('active');
   
-  // 削除ボタンのイベント（一度だけ実行）
+// 削除ボタンのイベント（一度だけ実行）
   const handleConfirm = () => {
     selectedItems = [];
+    
+    // sessionStorageをクリア
     sessionStorage.removeItem('homeName');
     sessionStorage.removeItem('contractorName');
     sessionStorage.removeItem('remarksText');
+    
+    // 全品半月チェックボックスをOFFに
+    const allHalfMonthCheckbox = document.getElementById('allHalfMonthCheckbox');
+    if (allHalfMonthCheckbox) {
+      allHalfMonthCheckbox.checked = false;
+    }
+    
     updateCalculator();
     updateMobileCount();
     saveSelectedItems();
