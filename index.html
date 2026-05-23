@@ -3078,33 +3078,44 @@ const homeNameInput = document.getElementById('homeNameInput');
 const contractorNameInput = document.getElementById('contractorNameInput');
 const remarksInput = document.getElementById('remarksInput');
 
+// クリア済みフラグを確認
+const isCleared = sessionStorage.getItem('inputCleared') === 'true';
+
 if (homeNameInput) {
-  // selectedItemsが0の場合は空にする、それ以外は既存値→sessionStorage
-  if (selectedItems.length === 0) {
+  if (isCleared) {
     homeNameInput.value = '';
   } else {
     const currentHomeName = elements.homeNameInput?.value || '';
     homeNameInput.value = currentHomeName || sessionStorage.getItem('homeName') || '';
   }
-  homeNameInput.addEventListener('input', saveRemarks);
+  homeNameInput.addEventListener('input', () => {
+    sessionStorage.removeItem('inputCleared'); // 入力されたらフラグを解除
+    saveRemarks();
+  });
 }
 if (contractorNameInput) {
-  if (selectedItems.length === 0) {
+  if (isCleared) {
     contractorNameInput.value = '';
   } else {
     const currentContractorName = elements.contractorNameInput?.value || '';
     contractorNameInput.value = currentContractorName || sessionStorage.getItem('contractorName') || '';
   }
-  contractorNameInput.addEventListener('input', saveRemarks);
+  contractorNameInput.addEventListener('input', () => {
+    sessionStorage.removeItem('inputCleared');
+    saveRemarks();
+  });
 }
 if (remarksInput) {
-  if (selectedItems.length === 0) {
+  if (isCleared) {
     remarksInput.value = '';
   } else {
     const currentRemarks = elements.remarksInput?.value || '';
     remarksInput.value = currentRemarks || sessionStorage.getItem('remarksText') || '';
   }
-  remarksInput.addEventListener('input', saveRemarks);
+  remarksInput.addEventListener('input', () => {
+    sessionStorage.removeItem('inputCleared');
+    saveRemarks();
+  });
 }
   
 // 要素参照を更新
@@ -3234,6 +3245,9 @@ function handleClearAll() {
     sessionStorage.removeItem('contractorName');
     sessionStorage.removeItem('remarksText');
     sessionStorage.removeItem('selectedWelfareItems');
+    
+    // クリア済みフラグを立てる
+    sessionStorage.setItem('inputCleared', 'true');
     
     // 全品半月チェックボックスをOFFに
     const allHalfMonthCheckbox = document.getElementById('allHalfMonthCheckbox');
