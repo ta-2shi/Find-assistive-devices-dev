@@ -2776,6 +2776,36 @@ function toggleAllHalfMonth() {
   updateMobileCount();
   saveSelectedItems();
 }
+
+// ローディング表示関数
+function showLoadingOverlay(message) {
+  // 既存のオーバーレイを削除
+  const existingOverlay = document.getElementById('loadingOverlay');
+  if (existingOverlay) {
+    existingOverlay.remove();
+  }
+  
+  const overlay = document.createElement('div');
+  overlay.id = 'loadingOverlay';
+  overlay.innerHTML = `
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+      <div style="background: white; padding: 30px 40px; border-radius: 16px; text-align: center; max-width: 300px;">
+        <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+        <div style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 10px;">${message}</div>
+        <div style="font-size: 13px; color: #6b7280;">しばらくお待ちください...</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function hideLoadingOverlay() {
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.remove();
+  }
+}  
+  
 // お気に入りトグル
 async function toggleFavorite(itemId) {
 const item = welfareEquipment.find(item => item.id === itemId);
@@ -3331,6 +3361,7 @@ async function generatePDF() {
     let shareCode = '';
     try {
       console.log('🔑 共有コード生成開始...');
+      showLoadingOverlay('共有コード生成中');
       
       const shareData = {
         salesPerson: currentSalesPerson || '未設定',
@@ -3346,13 +3377,15 @@ async function generatePDF() {
       shareCode = await Promise.race([
         FirebaseDB.saveSharedCode(shareData, true),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('タイムアウト')), 5000)
+         setTimeout(() => reject(new Error('タイムアウト')), 10000)
         )
       ]);
       
-      console.log('✅ 共有コード生成完了:', shareCode);
+   console.log('✅ 共有コード生成完了:', shareCode);
+      hideLoadingOverlay();
       
     } catch (error) {
+      hideLoadingOverlay();
       console.error('❌ 共有コード生成エラー:', error.message);
       
       // ユーザーに選択させる
