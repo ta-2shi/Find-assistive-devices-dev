@@ -2630,7 +2630,7 @@ return `
 <div class="result-item">
 <div class="item-info">
 <div class="item-name">${item.name}</div>
-<div class="item-points">${item.points}点/月</div>
+<div class="item-points">${item.points}${item.isActualCost ? '円' : '点'}/月</div>
 ${categoryDisplay}
 ${taisCodeDisplay}
 </div>
@@ -2682,7 +2682,7 @@ return `
 <div class="result-item">
 <div class="item-info">
 <div class="item-name">${favoriteIcon} ${item.name}</div>
-<div class="item-points">${item.points}点/月</div>
+<div class="item-points">${item.points}${item.isActualCost ? '円' : '点'}/月</div>
 ${categoryDisplay}
 ${taisCodeDisplay}
 </div>
