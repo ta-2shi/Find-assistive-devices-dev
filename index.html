@@ -2598,7 +2598,9 @@ return;
 elements.searchResults.innerHTML = categoryFiltersHTML + items.map(item => {
 const selectedItem = selectedItems.find(selected => selected.id === item.id);
 const isSelected = !!selectedItem;
-const quantity = selectedItem ? selectedItem.quantity : 0;
+const quantityFull = selectedItem ? (selectedItem.quantityFull || 0) : 0;
+const quantityHalf = selectedItem ? (selectedItem.quantityHalf || 0) : 0;
+const quantity = quantityFull + quantityHalf;
 
 const adminButtons = isAdminMode ? `
 <button class="edit-btn" onclick="editItem('${item.id}', '${item.name.replace(/'/g, "\\'")}', ${item.points}, '${(item.category || '').replace(/'/g, "\\'")}', '${(item.taisCode || '').replace(/'/g, "\\'")}')">編集</button>
