@@ -859,50 +859,39 @@ margin-bottom: 8px;
 transition: all 0.3s ease;
 }
 
-.reorder-mode .selected-item {
-cursor: move;
-}
-
-.reorder-mode .selected-item:hover {
-background: rgba(255, 255, 255, 0.8);
-transform: translateY(-1px);
-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.selected-item.dragging {
-opacity: 0.5;
-transform: rotate(3deg);
-z-index: 1000;
-box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
-
-.selected-item.drag-over {
-border-top: 3px solid #2563eb;
-}
-
-.drag-handle {
+.reorder-controls {
 display: none;
-align-items: center;
-justify-content: center;
-width: 20px;
-height: 40px;
-color: #9ca3af;
-cursor: grab;
+grid-template-columns: repeat(2, 1fr);
+gap: 4px;
 margin-right: 12px;
-font-size: 14px;
-transition: color 0.2s ease;
+flex-shrink: 0;
 }
 
-.reorder-mode .drag-handle {
-display: flex;
+.reorder-mode .reorder-controls {
+display: grid;
 }
-  
-.drag-handle:hover {
+
+.reorder-btn {
+width: 26px;
+height: 26px;
+border: 1px solid #d1d5db;
+border-radius: 6px;
+background: white;
 color: #4b5563;
+font-size: 12px;
+line-height: 1;
+cursor: pointer;
+transition: all 0.2s ease;
 }
 
-.drag-handle:active {
-cursor: grabbing;
+.reorder-btn:hover:not(:disabled) {
+background: #f3f4f6;
+color: #1e293b;
+}
+
+.reorder-btn:disabled {
+opacity: 0.3;
+cursor: default;
 }
 
 .selected-item-info {
@@ -2998,9 +2987,18 @@ elements.selectedItemsContainer.innerHTML = selectedItems.map((item, index) => {
   const halfTotal = (item.points / 2) * quantityHalf;
   const displayTotal = fullTotal + halfTotal;
 
+  const reorderControls = `
+    <div class="reorder-controls">
+      <button class="reorder-btn" onclick="moveItem('${item.id}', 'top')" ${index === 0 ? 'disabled' : ''} title="最上段へ">⤒</button>
+      <button class="reorder-btn" onclick="moveItem('${item.id}', 'bottom')" ${index === selectedItems.length - 1 ? 'disabled' : ''} title="最下段へ">⤓</button>
+      <button class="reorder-btn" onclick="moveItem('${item.id}', 'up')" ${index === 0 ? 'disabled' : ''} title="上へ">▲</button>
+      <button class="reorder-btn" onclick="moveItem('${item.id}', 'down')" ${index === selectedItems.length - 1 ? 'disabled' : ''} title="下へ">▼</button>
+    </div>
+  `;
+
   return `
-    <div class="selected-item" draggable="${isReorderMode}" data-index="${index}" data-item-id="${item.id}">
-      <div class="drag-handle">⋮⋮</div>
+    <div class="selected-item" data-index="${index}" data-item-id="${item.id}">
+      ${reorderControls}
       <div class="selected-item-info">
   ${categoryDisplay}
   <div class="selected-item-name">
@@ -3116,8 +3114,6 @@ elements.homeNameInput = homeNameInput;
 elements.contractorNameInput = contractorNameInput;
 elements.remarksInput = remarksInput;
 
-// ドラッグ&ドロップのイベントリスナーを追加
-setupDragAndDrop();
 }
 }
 
@@ -3128,67 +3124,6 @@ function updateMobileCount() {
     return sum + quantityFull + quantityHalf;
   }, 0);
   elements.mobileCountSpan.textContent = totalItems;
-}
-
-// ドラッグ&ドロップ機能のセットアップ
-function setupDragAndDrop() {
-const selectedItemElements = elements.selectedItemsContainer.querySelectorAll('.selected-item');
-let draggedElement = null;
-let draggedIndex = null;
-
-selectedItemElements.forEach((element, index) => {
-// 並び替えモードの時のみドラッグ可能にする
-element.draggable = isReorderMode;
-
-element.addEventListener('dragstart', (e) => {
-if (!isReorderMode) {
-e.preventDefault();
-return;
-}
-draggedElement = element;
-draggedIndex = parseInt(element.dataset.index);
-element.classList.add('dragging');
-e.dataTransfer.effectAllowed = 'move';
-e.dataTransfer.setData('text/html', element.outerHTML);
-});
-
-element.addEventListener('dragend', (e) => {
-element.classList.remove('dragging');
-draggedElement = null;
-draggedIndex = null;
-});
-
-element.addEventListener('dragover', (e) => {
-if (!isReorderMode) return;
-e.preventDefault();
-e.dataTransfer.dropEffect = 'move';
-});
-
-element.addEventListener('dragenter', (e) => {
-if (!isReorderMode) return;
-e.preventDefault();
-if (element !== draggedElement) {
-element.classList.add('drag-over');
-}
-});
-
-element.addEventListener('dragleave', (e) => {
-element.classList.remove('drag-over');
-});
-
-element.addEventListener('drop', (e) => {
-if (!isReorderMode) return;
-e.preventDefault();
-element.classList.remove('drag-over');
-
-if (draggedElement && element !== draggedElement) {
-const targetIndex = parseInt(element.dataset.index);
-
-// アイテムの順序を変更
-reorderSelectedItems(draggedIndex, targetIndex);
-}
-});
-});
 }
 
 // 並び替えモードの切り替え
@@ -3212,6 +3147,34 @@ selectedItems.splice(toIndex, 0, movedItem);
 updateCalculator();
 updateMobileCount();
 saveSelectedItems();
+}
+
+// 矢印ボタンによる並び替え
+function moveItem(itemId, direction) {
+const fromIndex = selectedItems.findIndex(item => item.id === itemId);
+if (fromIndex === -1) return;
+
+let toIndex;
+switch (direction) {
+case 'up':
+toIndex = fromIndex - 1;
+break;
+case 'down':
+toIndex = fromIndex + 1;
+break;
+case 'top':
+toIndex = 0;
+break;
+case 'bottom':
+toIndex = selectedItems.length - 1;
+break;
+default:
+return;
+}
+
+if (toIndex < 0 || toIndex >= selectedItems.length) return;
+
+reorderSelectedItems(fromIndex, toIndex);
 }
 
 function handleClearAll() {
