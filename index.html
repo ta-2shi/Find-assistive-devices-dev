@@ -1460,9 +1460,6 @@ animation: spin 1s linear infinite;
         <h3 style="color: rgba(255, 255, 255, 0.9); margin: 0 0 5px 0; font-size: 16px;">データベース情報</h3>
         <p style="color: rgba(255, 255, 255, 0.7); margin: 0; font-size: 14px;">登録件数: <span id="dbCount" style="color: #10b981; font-weight: 600;">読み込み中...</span></p>
       </div>
-      <button class="refresh-count-btn" id="refreshCountBtn" style="background: linear-gradient(45deg, #6366f1, #4f46e5); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">
-        更新
-      </button>
     </div>
     <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
       <p style="color: rgba(255, 255, 255, 0.7); margin: 0 0 10px 0; font-size: 13px;">
@@ -1730,7 +1727,6 @@ manualCategory: document.getElementById('manualCategory'),
 manualTaisCode: document.getElementById('manualTaisCode'),
 addManualBtn: document.getElementById('addManualBtn'),
 clearDatabaseBtn: document.getElementById('clearDatabaseBtn'),
-refreshCountBtn: document.getElementById('refreshCountBtn'),
 dbCountSpan: document.getElementById('dbCount'),
 adminStatus: document.getElementById('adminStatus'),
 searchInput: document.getElementById('searchInput'),
@@ -2392,9 +2388,6 @@ elements.addManualBtn.addEventListener('click', handleManualAdd);
 
 // データベース全クリア
 elements.clearDatabaseBtn.addEventListener('click', handleClearDatabase);
-
-// 件数更新
-elements.refreshCountBtn.addEventListener('click', updateDatabaseCount);
 
  // データを更新ボタン
 document.getElementById('updateDataBtn').addEventListener('click', async () => {
