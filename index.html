@@ -2687,6 +2687,12 @@ const adminButtons = isAdminMode ? `
 <button class="delete-btn" onclick="deleteItem('${item.id}', '${item.name.replace(/'/g, "\\'")}')">削除</button>
 ` : '';
 
+const addBtn = isAdminMode ? '' : `
+<button class="add-btn" onclick="addItem('${item.id}')">
+${isSelected ? `追加済み (${quantity}個)` : '追加'}
+</button>
+`;
+
 const categoryDisplay = item.category ? `<div class="item-category">品目: ${item.category}</div>` : '';
 const taisCodeDisplay = item.taisCode ? `<div class="item-tais-code">taisコード: ${item.taisCode}</div>` : '';
 
@@ -2699,9 +2705,7 @@ ${categoryDisplay}
 ${taisCodeDisplay}
 </div>
 <div class="item-actions">
-<button class="add-btn" onclick="addItem('${item.id}')">
-${isSelected ? `追加済み (${quantity}個)` : '追加'}
-</button>
+${addBtn}
 ${adminButtons}
 </div>
 </div>
@@ -2739,6 +2743,12 @@ const adminButtons = isAdminMode ? `
 <button class="delete-btn" onclick="deleteItem('${item.id}', '${item.name.replace(/'/g, "\\'")}')">削除</button>
 ` : '';
 
+const addBtn = isAdminMode ? '' : `
+<button class="add-btn" onclick="addItem('${item.id}')">
+${isSelected ? `追加済み (${quantity}個)` : '追加'}
+</button>
+`;
+
 const categoryDisplay = item.category ? `<div class="item-category">品目: ${item.category}</div>` : '';
 const taisCodeDisplay = item.taisCode ? `<div class="item-tais-code">taisコード: ${item.taisCode}</div>` : '';
 
@@ -2751,9 +2761,7 @@ ${categoryDisplay}
 ${taisCodeDisplay}
 </div>
 <div class="item-actions">
-<button class="add-btn" onclick="addItem('${item.id}')">
-${isSelected ? `追加済み (${quantity}個)` : '追加'}
-</button>
+${addBtn}
 ${adminButtons}
 </div>
 </div>
