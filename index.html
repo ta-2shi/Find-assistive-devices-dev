@@ -2465,10 +2465,10 @@ document.getElementById('updateDataBtn').addEventListener('click', async () => {
 
 async function handleClearDatabase() {
 // 二重確認で安全性を高める
-const firstConfirm = confirm('⚠️ 警告: データベースの全データが削除されます。\nこの操作は取り消せません。\n\n本当に続行しますか？');
+const firstConfirm = await showConfirmModal('⚠️ 警告: データベースの全データが削除されます。\nこの操作は取り消せません。\n\n本当に続行しますか？');
 if (!firstConfirm) return;
 
-const secondConfirm = confirm('最終確認: 全ての福祉用具データが完全に削除されます。\n\n削除を実行しますか？');
+const secondConfirm = await showConfirmModal('最終確認: 全ての福祉用具データが完全に削除されます。\n\n削除を実行しますか？');
 if (!secondConfirm) return;
 
 try {
@@ -3042,7 +3042,7 @@ saveBtn.addEventListener('click', handleSave);
 }
 
 async function deleteItem(id, name) {
-if (!confirm(`"${name}" を削除しますか？`)) return;
+if (!(await showConfirmModal(`"${name}" を削除しますか？`))) return;
 
 try {
 showInfo('データを削除中...');
@@ -3304,18 +3304,43 @@ if (toIndex < 0 || toIndex >= selectedItems.length) return;
 reorderSelectedItems(fromIndex, toIndex);
 }
 
+// 確認モーダルを表示し、結果をPromiseで返す（confirm()の代替）
+function showConfirmModal(message) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirmDeleteModal');
+    const messageEl = document.getElementById('confirmDeleteMessage');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const cancelBtn = document.getElementById('cancelDeleteBtn');
+
+    messageEl.textContent = message;
+    modal.classList.add('active');
+
+    const cleanup = () => {
+      modal.classList.remove('active');
+      confirmBtn.removeEventListener('click', handleConfirm);
+      cancelBtn.removeEventListener('click', handleCancel);
+    };
+    const handleConfirm = () => { cleanup(); resolve(true); };
+    const handleCancel = () => { cleanup(); resolve(false); };
+
+    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener('click', handleCancel);
+  });
+}
+
 function handleClearAll() {
   if (selectedItems.length === 0) {
     alert('削除する品目がありません。');
     return;
   }
-  
+
   // カスタム削除確認モーダルを表示
   const modal = document.getElementById('confirmDeleteModal');
   const confirmBtn = document.getElementById('confirmDeleteBtn');
   const cancelBtn = document.getElementById('cancelDeleteBtn');
-  
+
   // モーダルを表示
+  document.getElementById('confirmDeleteMessage').textContent = '選択した品目を全て削除しますか？';
   modal.classList.add('active');
   
 // 削除ボタンのイベント（一度だけ実行）
@@ -4422,7 +4447,7 @@ initSalesPersonModal(); //
 <div id="confirmDeleteModal" class="modal">
   <div class="modal-content">
     <h2 style="margin-bottom: 20px; color: #1e293b;">確認</h2>
-    <p style="margin-bottom: 30px; color: #6b7280; font-size: 16px;">選択した品目を全て削除しますか？</p>
+    <p id="confirmDeleteMessage" style="margin-bottom: 30px; color: #6b7280; font-size: 16px; white-space: pre-line;">選択した品目を全て削除しますか？</p>
     <div style="display: flex; gap: 12px;">
       <button id="cancelDeleteBtn" class="confirm-btn" style="background: #6b7280;">キャンセル</button>
       <button id="confirmDeleteBtn" class="confirm-btn" style="background: linear-gradient(45deg, #ef4444, #dc2626);">削除</button>
