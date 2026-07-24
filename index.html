@@ -1504,6 +1504,10 @@ Excelファイルをアップロード
 <label class="input-label">taisコード</label>
 <input type="text" class="manual-input" id="manualTaisCode" placeholder="taisコードを入力">
 </div>
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+<input type="checkbox" id="manualActualCost" style="width: 18px; height: 18px; cursor: pointer;">
+<label for="manualActualCost" style="cursor: pointer; color: #1e293b; font-weight: 600; font-size: 14px;">実費対象として設定する</label>
+</div>
 <button class="add-manual-btn" id="addManualBtn">手動追加</button>
 </div>
 
@@ -1730,6 +1734,7 @@ manualName: document.getElementById('manualName'),
 manualPoints: document.getElementById('manualPoints'),
 manualCategory: document.getElementById('manualCategory'),
 manualTaisCode: document.getElementById('manualTaisCode'),
+manualActualCost: document.getElementById('manualActualCost'),
 addManualBtn: document.getElementById('addManualBtn'),
 clearDatabaseBtn: document.getElementById('clearDatabaseBtn'),
 dbCountSpan: document.getElementById('dbCount'),
@@ -1890,7 +1895,7 @@ throw error;
 }
 },
 
-async addEquipment(name, points, category = '', taisCode = '') {
+async addEquipment(name, points, category = '', taisCode = '', isActualCost = false) {
 try {
 const docRef = await window.firestore.addDoc(
 window.firestore.collection(window.db, 'welfare_equipment'),
@@ -1899,7 +1904,7 @@ name: name.trim(),
 points: parseInt(points),
 category: category.trim(),
 taisCode: taisCode.trim(),
-isActualCost: false,
+isActualCost: isActualCost,
 isFavorite: false,
 createdAt: new Date()
 }
@@ -2503,6 +2508,7 @@ const name = elements.manualName.value.trim();
 const points = parseInt(elements.manualPoints.value);
 const category = elements.manualCategory.value.trim();
 const taisCode = elements.manualTaisCode.value.trim();
+const isActualCost = elements.manualActualCost.checked;
 
 if (!name || !points || points <= 0) {
 showError('商品名と有効な点数を入力してください');
@@ -2511,7 +2517,7 @@ return;
 
 try {
 showInfo('データを保存中...');
-await FirebaseDB.addEquipment(name, points, category, taisCode);
+await FirebaseDB.addEquipment(name, points, category, taisCode, isActualCost);
 await FirebaseDB.bumpMetaVersion();
 await loadEquipmentData();
 await updateDatabaseCount(); // 件数も更新
@@ -2520,6 +2526,7 @@ elements.manualName.value = '';
 elements.manualPoints.value = '';
 elements.manualCategory.value = '';
 elements.manualTaisCode.value = '';
+elements.manualActualCost.checked = false;
 showSuccess(`"${name}" を追加しました`);
 
 // 検索結果を更新
