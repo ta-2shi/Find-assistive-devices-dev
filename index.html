@@ -2975,28 +2975,57 @@ showError('実費設定の更新に失敗しました');
 }
 }
 
-async function editItem(id, currentName, currentPoints, currentCategory = '', currentTaisCode = '', currentActualCost = false) {
+function editItem(id, currentName, currentPoints, currentCategory = '', currentTaisCode = '', currentActualCost = false) {
 const item = welfareEquipment.find(item => item.id === id);
 const currentFavorite = item ? item.isFavorite : false;
 
-const newName = prompt('商品名を編集:', currentName);
-if (!newName || newName.trim() === '') return;
+const modal = document.getElementById('editItemModal');
+const nameInput = document.getElementById('editItemName');
+const pointsInput = document.getElementById('editItemPoints');
+const categorySelect = document.getElementById('editItemCategory');
+const taisCodeInput = document.getElementById('editItemTaisCode');
+const actualCostCheckbox = document.getElementById('editItemActualCost');
+const cancelBtn = document.getElementById('cancelEditItemBtn');
+const saveBtn = document.getElementById('saveEditItemBtn');
 
-const newPoints = prompt('点数を編集:', currentPoints);
-const points = parseInt(newPoints);
-if (!points || points <= 0) return;
+nameInput.value = currentName;
+pointsInput.value = currentPoints;
+categorySelect.value = currentCategory;
+taisCodeInput.value = currentTaisCode;
+actualCostCheckbox.checked = currentActualCost;
 
-const newCategory = prompt('品目を編集:', currentCategory);
-const category = newCategory !== null ? newCategory.trim() : '';
+modal.classList.add('active');
 
-const newTaisCode = prompt('taisコードを編集:', currentTaisCode);
-const taisCode = newTaisCode !== null ? newTaisCode.trim() : '';
+const cleanup = () => {
+modal.classList.remove('active');
+cancelBtn.removeEventListener('click', handleCancel);
+saveBtn.removeEventListener('click', handleSave);
+};
 
-const actualCostConfirm = confirm(`実費対象として設定しますか？\n現在の設定: ${currentActualCost ? 'ON (実費対象)' : 'OFF (点数対象)'}`);
+const handleCancel = () => cleanup();
+
+const handleSave = async () => {
+const newName = nameInput.value.trim();
+if (!newName) {
+showError('商品名を入力してください');
+return;
+}
+
+const points = parseInt(pointsInput.value);
+if (!points || points <= 0) {
+showError('有効な点数を入力してください');
+return;
+}
+
+const category = categorySelect.value;
+const taisCode = taisCodeInput.value.trim();
+const actualCost = actualCostCheckbox.checked;
+
+cleanup();
 
 try {
 showInfo('データを更新中...');
-await FirebaseDB.updateEquipment(id, newName.trim(), points, category, taisCode, actualCostConfirm, currentFavorite);
+await FirebaseDB.updateEquipment(id, newName, points, category, taisCode, actualCost, currentFavorite);
 await FirebaseDB.bumpMetaVersion();
 await loadEquipmentData();
 await updateDatabaseCount();
@@ -3006,6 +3035,10 @@ showSuccess('データを更新しました');
 console.error('編集エラー:', error);
 showError('データの更新に失敗しました');
 }
+};
+
+cancelBtn.addEventListener('click', handleCancel);
+saveBtn.addEventListener('click', handleSave);
 }
 
 async function deleteItem(id, name) {
@@ -4332,6 +4365,59 @@ initSalesPersonModal(); //
 });
 </script>
   
+<!-- 品目編集モーダル -->
+<div id="editItemModal" class="modal">
+  <div class="modal-content" style="max-width: 480px; text-align: left; max-height: 85vh; overflow-y: auto;">
+    <h2 style="margin-bottom: 20px; color: #1e293b;">品目を編集</h2>
+
+    <div style="margin-bottom: 14px;">
+      <label style="display: block; margin-bottom: 6px; color: #374151; font-weight: 600; font-size: 14px;">商品名</label>
+      <input type="text" id="editItemName" style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+    </div>
+
+    <div style="margin-bottom: 14px;">
+      <label style="display: block; margin-bottom: 6px; color: #374151; font-weight: 600; font-size: 14px;">点数/月</label>
+      <input type="number" id="editItemPoints" style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+    </div>
+
+    <div style="margin-bottom: 14px;">
+      <label style="display: block; margin-bottom: 6px; color: #374151; font-weight: 600; font-size: 14px;">品目</label>
+      <select id="editItemCategory" style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
+        <option value="">選択してください</option>
+        <option value="車いす貸与">車いす貸与</option>
+        <option value="車いす付属品貸与">車いす付属品貸与</option>
+        <option value="特殊寝台貸与">特殊寝台貸与</option>
+        <option value="特殊寝台付属品貸与">特殊寝台付属品貸与</option>
+        <option value="床ずれ防止用具貸与">床ずれ防止用具貸与</option>
+        <option value="体位変換器貸与">体位変換器貸与</option>
+        <option value="手すり貸与">手すり貸与</option>
+        <option value="スロープ貸与">スロープ貸与</option>
+        <option value="歩行器貸与">歩行器貸与</option>
+        <option value="歩行補助つえ貸与">歩行補助つえ貸与</option>
+        <option value="徘徊感知機器貸与">徘徊感知機器貸与</option>
+        <option value="移動用リフト貸与">移動用リフト貸与</option>
+        <option value="自動排泄処理装置貸与">自動排泄処理装置貸与</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom: 14px;">
+      <label style="display: block; margin-bottom: 6px; color: #374151; font-weight: 600; font-size: 14px;">taisコード</label>
+      <input type="text" id="editItemTaisCode" style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+      <input type="checkbox" id="editItemActualCost" style="width: 18px; height: 18px; cursor: pointer;">
+      <label for="editItemActualCost" style="cursor: pointer; color: #374151; font-weight: 500; font-size: 14px;">実費対象として設定する</label>
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+      <button id="cancelEditItemBtn" class="confirm-btn" style="background: #6b7280;">キャンセル</button>
+      <button id="saveEditItemBtn" class="confirm-btn">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- 削除確認モーダル -->
 <div id="confirmDeleteModal" class="modal">
   <div class="modal-content">
