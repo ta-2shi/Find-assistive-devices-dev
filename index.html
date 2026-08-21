@@ -3407,14 +3407,24 @@ function handleClearAll() {
 // 上部の全削除ボタン
 elements.clearAllTop.addEventListener('click', handleClearAll);
 
-// モバイル表示切り替え
+// モバイル表示切り替え（計算結果を独立した画面として表示）
 elements.toggleCalculatorBtn.addEventListener('click', () => {
+  document.querySelector('.search-container').style.display = 'none';
+  document.querySelector('.favorite-section').style.display = 'none';
+  elements.searchResults.style.display = 'none';
+  elements.toggleCalculatorBtn.style.display = 'none';
+
   elements.calculator.classList.add('show');
   elements.calculator.style.display = 'flex';
   elements.closeCalculatorBtn.style.display = 'block';
 });
 
 elements.closeCalculatorBtn.addEventListener('click', () => {
+  document.querySelector('.search-container').style.display = 'block';
+  document.querySelector('.favorite-section').style.display = 'block';
+  elements.searchResults.style.display = 'block';
+  elements.toggleCalculatorBtn.style.display = 'block';
+
   elements.calculator.classList.remove('show');
   elements.calculator.style.display = 'none';
   elements.closeCalculatorBtn.style.display = 'none';
