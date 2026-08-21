@@ -723,6 +723,61 @@ flex-wrap: wrap;
 gap: 8px;
 }
 
+.period-tabs {
+display: flex;
+gap: 8px;
+margin-bottom: 16px;
+background: #f1f5f9;
+padding: 4px;
+border-radius: 10px;
+}
+
+.period-tab-btn {
+flex: 1;
+background: transparent;
+color: #64748b;
+border: none;
+padding: 10px 12px;
+border-radius: 8px;
+cursor: pointer;
+font-weight: 700;
+font-size: 14px;
+transition: all 0.2s ease;
+}
+
+.period-tab-btn.active {
+background: white;
+color: #2563eb;
+box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.period-next-startmonth {
+display: flex;
+align-items: center;
+gap: 10px;
+margin-bottom: 16px;
+padding: 10px 14px;
+background: #eff6ff;
+border: 1px solid #bfdbfe;
+border-radius: 8px;
+}
+
+.period-next-startmonth label {
+font-size: 13px;
+font-weight: 600;
+color: #1e40af;
+white-space: nowrap;
+}
+
+.period-next-startmonth input[type="month"] {
+flex: 1;
+padding: 8px 10px;
+border: 1px solid #93c5fd;
+border-radius: 6px;
+font-size: 16px;
+background: white;
+}
+
 .burden-rate-buttons {
 display: flex;
 gap: 6px;
@@ -1639,6 +1694,14 @@ Excelファイルをアップロード
 
 <div class="calculator" id="calculator">
 <button class="close-btn" id="closeCalculator" style="display: none;">× 閉じる</button>
+<div class="period-tabs" id="periodTabs">
+<button class="period-tab-btn active" id="periodTabCurrent" data-period="current">今月</button>
+<button class="period-tab-btn" id="periodTabNext" data-period="next">来月以降</button>
+</div>
+<div class="period-next-startmonth" id="periodNextStartMonthWrap" style="display: none;">
+<label for="periodStartMonthInput">適用開始月</label>
+<input type="month" id="periodStartMonthInput">
+</div>
 <div class="calculator-title">
 <div class="burden-rate-buttons">
 <button class="burden-rate-btn active" id="burdenRate1" data-rate="1">1割</button>
@@ -1716,6 +1779,14 @@ let isFavoriteMode = false;
 let selectedCategory = 'all';
 let selectedLogo = 'nextus'; // デフォルトはNextus
 let burdenRate = 1; // デフォルトは1割
+
+// 今月/来月以降（変更後）の2期間を切り替えて入力できるようにする状態
+// selectedItems / burdenRate は「現在表示中の期間」の内容を指す
+let activePeriod = 'current'; // 'current' | 'next'
+let periods = {
+  current: { selectedItems: [], burdenRate: 1, remarks: '' },
+  next: { selectedItems: [], burdenRate: 1, remarks: '', startMonth: '' }
+};
 
 // ロゴ画像データ（Base64エンコード）
 const logoData = {
@@ -1983,6 +2054,7 @@ throw error;
       remarks: data.remarks || '',
       burdenRate: data.burdenRate || 1,
       items: data.items || [],
+      periods: data.periods || null,
       createdBy: data.salesPerson || '',
       createdAt: new Date(),
       expiresAt: isPermanent ? null : new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -2203,14 +2275,39 @@ function migrateItemData(item) {
   };
 }
   
+// 今月/来月以降の状態をsessionStorageへ保存
+function persistPeriods() {
+  try {
+    sessionStorage.setItem('welfarePeriods', JSON.stringify({ activePeriod, periods }));
+  } catch (error) {
+    console.error('状態保存エラー:', error);
+  }
+}
+
 // 選択済みアイテムの読み込み
 function loadSelectedItems() {
   try {
-    const saved = sessionStorage.getItem('selectedWelfareItems');
+    const saved = sessionStorage.getItem('welfarePeriods');
     if (saved) {
-      const items = JSON.parse(saved);
+      const data = JSON.parse(saved);
+      const savedCurrent = data.periods?.current || {};
+      const savedNext = data.periods?.next || {};
+
       // 古いデータを新形式に変換
-      selectedItems = items.map(item => migrateItemData(item));
+      periods.current.selectedItems = (savedCurrent.selectedItems || []).map(item => migrateItemData(item));
+      periods.current.burdenRate = savedCurrent.burdenRate || 1;
+      periods.current.remarks = savedCurrent.remarks || '';
+      periods.next.selectedItems = (savedNext.selectedItems || []).map(item => migrateItemData(item));
+      periods.next.burdenRate = savedNext.burdenRate || 1;
+      periods.next.remarks = savedNext.remarks || '';
+      periods.next.startMonth = savedNext.startMonth || '';
+
+      activePeriod = data.activePeriod === 'next' ? 'next' : 'current';
+      selectedItems = periods[activePeriod].selectedItems;
+      burdenRate = periods[activePeriod].burdenRate;
+
+      updateBurdenRateButtonsUI();
+      updatePeriodTabsUI();
       updateCalculator();
       updateMobileCount();
     }
@@ -2222,7 +2319,9 @@ function loadSelectedItems() {
 // 選択済みアイテムの保存
 function saveSelectedItems() {
   try {
-    sessionStorage.setItem('selectedWelfareItems', JSON.stringify(selectedItems));
+    periods[activePeriod].selectedItems = selectedItems;
+    periods[activePeriod].burdenRate = burdenRate;
+    persistPeriods();
   } catch (error) {
     console.error('選択アイテム保存エラー:', error);
   }
@@ -2231,12 +2330,70 @@ function saveSelectedItems() {
 // 備考の保存
 function saveRemarks() {
   try {
-    sessionStorage.setItem('remarksText', elements.remarksInput.value);
     sessionStorage.setItem('homeName', elements.homeNameInput.value);
     sessionStorage.setItem('contractorName', elements.contractorNameInput.value);
+    periods[activePeriod].remarks = elements.remarksInput.value;
+    persistPeriods();
   } catch (error) {
     console.error('備考保存エラー:', error);
   }
+}
+
+// 負担割合ボタンの選択状態を現在のburdenRateに合わせる
+function updateBurdenRateButtonsUI() {
+  document.querySelectorAll('.burden-rate-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.rate) === burdenRate);
+  });
+}
+
+// 今月/来月以降タブの見た目・適用開始月欄を更新
+function updatePeriodTabsUI() {
+  const currentTab = document.getElementById('periodTabCurrent');
+  const nextTab = document.getElementById('periodTabNext');
+  if (currentTab) currentTab.classList.toggle('active', activePeriod === 'current');
+  if (nextTab) nextTab.classList.toggle('active', activePeriod === 'next');
+
+  const startMonthWrap = document.getElementById('periodNextStartMonthWrap');
+  if (startMonthWrap) {
+    startMonthWrap.style.display = activePeriod === 'next' ? 'flex' : 'none';
+  }
+  const startMonthInput = document.getElementById('periodStartMonthInput');
+  if (startMonthInput) {
+    startMonthInput.value = periods.next.startMonth || '';
+  }
+}
+
+// 「来月以降（YYYY-MM）」を「◯年◯月〜」の表示用ラベルに変換
+function formatPeriodMonthLabel(yyyyMm) {
+  if (!yyyyMm) return '';
+  const [y, m] = yyyyMm.split('-');
+  if (!y || !m) return '';
+  return `${y}年${parseInt(m, 10)}月〜`;
+}
+
+// 今月/来月以降タブの切り替え
+function switchPeriod(period) {
+  if (period !== 'current' && period !== 'next') return;
+  if (period === activePeriod) return;
+
+  // 現在表示中の期間の内容をperiodsへ退避
+  periods[activePeriod].selectedItems = selectedItems;
+  periods[activePeriod].burdenRate = burdenRate;
+  if (elements.remarksInput) {
+    periods[activePeriod].remarks = elements.remarksInput.value;
+  }
+
+  activePeriod = period;
+  selectedItems = periods[activePeriod].selectedItems;
+  burdenRate = periods[activePeriod].burdenRate;
+  // 備考欄は期間ごとに内容が異なるため、直前の期間の値を引き継がせない
+  elements.remarksInput = null;
+
+  updateBurdenRateButtonsUI();
+  updatePeriodTabsUI();
+  updateCalculator();
+  updateMobileCount();
+  persistPeriods();
 }
   
 // 備考の読み込み（初期化時は何もしない）
@@ -3232,7 +3389,7 @@ if (remarksInput) {
     remarksInput.value = '';
   } else {
     const currentRemarks = elements.remarksInput?.value || '';
-    remarksInput.value = currentRemarks || sessionStorage.getItem('remarksText') || '';
+    remarksInput.value = currentRemarks || periods[activePeriod].remarks || '';
   }
   remarksInput.addEventListener('input', () => {
     sessionStorage.removeItem('inputCleared');
@@ -3444,14 +3601,24 @@ showFavorites();
 if (!btn) return;
 btn.addEventListener('click', () => {
 burdenRate = parseInt(btn.dataset.rate);
-    
+
 // ボタンのアクティブ状態を更新
 document.querySelectorAll('.burden-rate-btn').forEach(b => b.classList.remove('active'));
 btn.classList.add('active');
-    
+
 // 計算結果を更新
 updateCalculator();
+saveSelectedItems();
   });
+});
+
+// 今月/来月以降タブのイベントリスナー
+document.getElementById('periodTabCurrent').addEventListener('click', () => switchPeriod('current'));
+document.getElementById('periodTabNext').addEventListener('click', () => switchPeriod('next'));
+
+document.getElementById('periodStartMonthInput').addEventListener('change', (e) => {
+  periods.next.startMonth = e.target.value;
+  persistPeriods();
 });
 
 // PDF印刷機能 - ロゴ選択モーダルを表示
@@ -3531,16 +3698,8 @@ async function generatePDF() {
       console.log('🔑 共有コード生成開始...');
       showLoadingOverlay('共有コード生成中');
       
-      const shareData = {
-        salesPerson: currentSalesPerson || '未設定',
-        homeName: elements.homeNameInput?.value || '',
-        contractorName: elements.contractorNameInput?.value || '',
-        remarks: elements.remarksInput?.value || '',
-        burdenRate: burdenRate,
-        items: selectedItems,
-        description: ''
-      };
-      
+      const shareData = buildShareDataPayload();
+
       // Promise.raceでタイムアウト制御（5秒）
       shareCode = await Promise.race([
         FirebaseDB.saveSharedCode(shareData, true),
@@ -3679,11 +3838,11 @@ async function generatePDF() {
 }
 
 // 印刷用HTML作成関数
-function createPrintHTML(shareCode = '') {
-  const currentDate = new Date().toLocaleDateString('ja-JP');
+// 1期間分（今月 または 来月以降）の帳票ページHTMLを生成
+function buildPeriodPagesHTML({ items, burdenRate, remarks, titleSuffix, shareCode, homeName, contractorName, currentDate }) {
 
 // 通常の点数計算（実費以外）
-const normalPoints = selectedItems
+const normalPoints = items
   .filter(item => !item.isActualCost)
   .reduce((sum, item) => {
     const quantityFull = item.quantityFull || 0;
@@ -3694,7 +3853,7 @@ const normalPoints = selectedItems
   }, 0);
 
 // 実費の合計計算
-const actualCostTotal = selectedItems
+const actualCostTotal = items
   .filter(item => item.isActualCost)
   .reduce((sum, item) => {
     const quantityFull = item.quantityFull || 0;
@@ -3719,12 +3878,12 @@ topSummaryHTML = `実費合計: ${actualCostTotal.toLocaleString()}円`;
 
 // 11件以下の場合は1ページ、11件超の場合は2ページに分割
 const itemsPerPage = 10;
-const needsSecondPage = selectedItems.length > itemsPerPage;
+const needsSecondPage = items.length > itemsPerPage;
 
 // 1ページ目の品目
-const page1Items = selectedItems.slice(0, itemsPerPage);
+const page1Items = items.slice(0, itemsPerPage);
 // 2ページ目の品目
-const page2Items = needsSecondPage ? selectedItems.slice(itemsPerPage) : [];
+const page2Items = needsSecondPage ? items.slice(itemsPerPage) : [];
 
 // 品目HTMLを生成する関数
 function generateItemsHTML(items, startIndex = 0) {
@@ -3772,7 +3931,7 @@ function generateItemsHTML(items, startIndex = 0) {
   }).join('');
 }
 // 備考欄の取得
-const remarks = elements.remarksInput.value.trim();
+const remarksText = (remarks || '').trim();
 
 // 負担割合の表示
 const burdenRateText = burdenRate === 1 ? '1割負担' : burdenRate === 2 ? '2割負担' : '3割負担';
@@ -3782,10 +3941,10 @@ const signatureAndFooter = `
 <div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #374151;">
 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 30px;">
 <div style="flex: 1; max-width: 400px;">
-${remarks ? `
+${remarksText ? `
 <div style="margin-bottom: 20px;">
 <div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px;">備考</div>
-<div style="padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; color: #374151; white-space: pre-wrap; line-height: 1.6; min-height: 80px;">${remarks}</div>
+<div style="padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; color: #374151; white-space: pre-wrap; line-height: 1.6; min-height: 80px;">${remarksText}</div>
 </div>
 ` : ''}
 <div style="font-size: 8px; color: #9ca3af; line-height: 1.5;">
@@ -3814,10 +3973,6 @@ ${remarks ? `
 </div>
 `;
 
-// 事業所名と契約者名の取得
-const homeName = elements.homeNameInput.value.trim() || '＿＿＿＿＿＿＿＿＿＿＿＿';
-const contractorName = elements.contractorNameInput.value.trim() || '＿＿＿＿＿＿＿＿';
-
 // ロゴHTML
 const logoHTML = logoData[selectedLogo] ? `
 <img src="${logoData[selectedLogo]}" alt="Company Logo" style="max-width: 200px; max-height: 80px; object-fit: contain;">
@@ -3828,7 +3983,7 @@ let page1HTML = `
 <div class="pdf-page" style="max-width: 714px; margin: 0 auto; background: white; page-break-after: always;">
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
 <div style="flex: 1;"></div>
-<h1 style="flex: 2; text-align: center; font-size: 22px; font-weight: bold; color: #1e293b; margin: 0;">福祉用具レンタル搬入完了書</h1>
+<h1 style="flex: 2; text-align: center; font-size: 22px; font-weight: bold; color: #1e293b; margin: 0;">福祉用具レンタル搬入完了書${titleSuffix}</h1>
 <div style="flex: 1; text-align: right;">
 ${logoHTML}
 </div>
@@ -3887,7 +4042,7 @@ page2HTML = `
 <div class="pdf-page" style="max-width: 714px; margin: 0 auto; background: white; margin-top: 100px;">
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
 <div style="flex: 1;"></div>
-<h1 style="flex: 2; text-align: center; font-size: 24px; font-weight: bold; color: #1e293b; margin: 0;">福祉用具レンタル搬入完了書（2枚目）</h1>
+<h1 style="flex: 2; text-align: center; font-size: 24px; font-weight: bold; color: #1e293b; margin: 0;">福祉用具レンタル搬入完了書${titleSuffix}（2枚目）</h1>
 <div style="flex: 1; text-align: right;">
 ${logoHTML}
 </div>
@@ -3921,6 +4076,47 @@ ${signatureAndFooter}
 }
 
 return page1HTML + page2HTML;
+}
+
+// 今月・来月以降（変更後）をまとめた帳票HTMLを生成
+function createPrintHTML(shareCode = '') {
+  const currentDate = new Date().toLocaleDateString('ja-JP');
+  const homeName = elements.homeNameInput.value.trim() || '＿＿＿＿＿＿＿＿＿＿＿＿';
+  const contractorName = elements.contractorNameInput.value.trim() || '＿＿＿＿＿＿＿＿';
+
+  // 印刷前に、現在表示中の期間の内容をperiodsへ同期
+  periods[activePeriod].selectedItems = selectedItems;
+  periods[activePeriod].burdenRate = burdenRate;
+  if (elements.remarksInput) {
+    periods[activePeriod].remarks = elements.remarksInput.value;
+  }
+
+  let html = buildPeriodPagesHTML({
+    items: periods.current.selectedItems,
+    burdenRate: periods.current.burdenRate,
+    remarks: periods.current.remarks,
+    titleSuffix: '（今月分）',
+    shareCode,
+    homeName,
+    contractorName,
+    currentDate
+  });
+
+  if (periods.next.selectedItems.length > 0) {
+    const monthLabel = formatPeriodMonthLabel(periods.next.startMonth);
+    html += buildPeriodPagesHTML({
+      items: periods.next.selectedItems,
+      burdenRate: periods.next.burdenRate,
+      remarks: periods.next.remarks,
+      titleSuffix: monthLabel ? `（${monthLabel}変更後）` : '（来月以降分・変更後）',
+      shareCode: '',
+      homeName,
+      contractorName,
+      currentDate
+    });
+  }
+
+  return html;
 }
 
 // 状態表示関数
@@ -3966,19 +4162,27 @@ const HISTORY_KEY = 'pdfHistory';
 const MAX_HISTORY = 10;
 
 function saveToHistory() {
-  if (selectedItems.length === 0) return;
-  
+  // 現在表示中の期間の内容をperiodsへ同期してから、今月・来月以降の両方を保存
+  periods[activePeriod].selectedItems = selectedItems;
+  periods[activePeriod].burdenRate = burdenRate;
+  if (elements.remarksInput) {
+    periods[activePeriod].remarks = elements.remarksInput.value;
+  }
+
+  if (periods.current.selectedItems.length === 0 && periods.next.selectedItems.length === 0) return;
+
   const historyItem = {
     id: Date.now(),
     timestamp: new Date().toISOString(),
     salesPerson: currentSalesPerson || '未設定',
     homeName: elements.homeNameInput.value.trim() || '',
     contractorName: elements.contractorNameInput.value.trim() || '',
-    remarks: elements.remarksInput.value.trim() || '',
-    burdenRate: burdenRate,
-    selectedItems: selectedItems,
+    remarks: periods.current.remarks || '',
+    burdenRate: periods.current.burdenRate,
+    selectedItems: periods.current.selectedItems,
+    periods: JSON.parse(JSON.stringify(periods)),
   };
-  
+
   let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
   history.unshift(historyItem);
   history = history.slice(0, MAX_HISTORY);
@@ -4018,18 +4222,34 @@ function restoreFromHistory(id) {
   const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
   const item = history.find(h => h.id === id);
   if (!item) return;
-  
-  const items = JSON.parse(JSON.stringify(item.selectedItems));
-  selectedItems = items.map(item => migrateItemData(item));
-  burdenRate = item.burdenRate;
-  
-  document.querySelectorAll('.burden-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if (parseFloat(btn.dataset.rate) === burdenRate) {
-      btn.classList.add('active');
-    }
-  });
-  
+
+  if (item.periods) {
+    // 今月・来月以降の両方が保存されている履歴
+    periods.current.selectedItems = (item.periods.current?.selectedItems || []).map(i => migrateItemData(i));
+    periods.current.burdenRate = item.periods.current?.burdenRate || 1;
+    periods.current.remarks = item.periods.current?.remarks || '';
+    periods.next.selectedItems = (item.periods.next?.selectedItems || []).map(i => migrateItemData(i));
+    periods.next.burdenRate = item.periods.next?.burdenRate || 1;
+    periods.next.remarks = item.periods.next?.remarks || '';
+    periods.next.startMonth = item.periods.next?.startMonth || '';
+  } else {
+    // 旧形式（今月分のみ）の履歴
+    periods.current.selectedItems = JSON.parse(JSON.stringify(item.selectedItems)).map(i => migrateItemData(i));
+    periods.current.burdenRate = item.burdenRate || 1;
+    periods.current.remarks = item.remarks || '';
+    periods.next.selectedItems = [];
+    periods.next.burdenRate = 1;
+    periods.next.remarks = '';
+    periods.next.startMonth = '';
+  }
+
+  activePeriod = 'current';
+  selectedItems = periods.current.selectedItems;
+  burdenRate = periods.current.burdenRate;
+  elements.remarksInput = null;
+
+  updateBurdenRateButtonsUI();
+  updatePeriodTabsUI();
   updateCalculator();
   updateMobileCount();
   saveSelectedItems();
@@ -4197,24 +4417,37 @@ document.getElementById('copySpellBtn').addEventListener('click', () => {
 });
 document.getElementById('restoreSpellBtn').addEventListener('click', restoreFromSpell);
 
+// 今月・来月以降の内容をまとめた共有データを作成（共有コード・PDF埋め込み共通）
+function buildShareDataPayload(description = '') {
+  // 現在表示中の期間の内容をperiodsへ同期
+  periods[activePeriod].selectedItems = selectedItems;
+  periods[activePeriod].burdenRate = burdenRate;
+  if (elements.remarksInput) {
+    periods[activePeriod].remarks = elements.remarksInput.value;
+  }
+
+  return {
+    salesPerson: currentSalesPerson || '未設定',
+    homeName: elements.homeNameInput?.value || '',
+    contractorName: elements.contractorNameInput?.value || '',
+    remarks: periods.current.remarks || '',
+    burdenRate: periods.current.burdenRate,
+    items: periods.current.selectedItems,
+    periods: JSON.parse(JSON.stringify(periods)),
+    description
+  };
+}
+
 // 共有コード機能
 async function generateShareCode() {
   if (selectedItems.length === 0) {
     alert('選択した品目がありません。');
     return;
   }
-  
+
   try {
-    const shareData = {
-      salesPerson: currentSalesPerson || '未設定',
-      homeName: elements.homeNameInput?.value || '',
-      contractorName: elements.contractorNameInput?.value || '',
-      remarks: elements.remarksInput?.value || '',
-      burdenRate: burdenRate,
-      items: selectedItems,
-      description: ''
-    };
-    
+    const shareData = buildShareDataPayload();
+
     showInfo('共有コードを生成中...');
     const code = await FirebaseDB.saveSharedCode(shareData, true); // 常に無期限
     
@@ -4248,18 +4481,34 @@ async function restoreFromShareCode() {
     const data = await FirebaseDB.loadSharedCode(code);
     
     // データを復元（古いデータも変換）
-    const items = data.items || [];
-    selectedItems = items.map(item => migrateItemData(item));
-    burdenRate = data.burdenRate || 1;
-    
-    // 負担割合ボタンを更新
-    document.querySelectorAll('.burden-btn').forEach(btn => {
-      btn.classList.remove('active');
-      if (parseFloat(btn.dataset.rate) === burdenRate) {
-        btn.classList.add('active');
-      }
-    });
-    
+    if (data.periods) {
+      // 今月・来月以降の両方が保存されている共有コード
+      periods.current.selectedItems = (data.periods.current?.selectedItems || []).map(item => migrateItemData(item));
+      periods.current.burdenRate = data.periods.current?.burdenRate || 1;
+      periods.current.remarks = data.periods.current?.remarks || '';
+      periods.next.selectedItems = (data.periods.next?.selectedItems || []).map(item => migrateItemData(item));
+      periods.next.burdenRate = data.periods.next?.burdenRate || 1;
+      periods.next.remarks = data.periods.next?.remarks || '';
+      periods.next.startMonth = data.periods.next?.startMonth || '';
+    } else {
+      // 旧形式（今月分のみ）の共有コード
+      const items = data.items || [];
+      periods.current.selectedItems = items.map(item => migrateItemData(item));
+      periods.current.burdenRate = data.burdenRate || 1;
+      periods.current.remarks = data.remarks || '';
+      periods.next.selectedItems = [];
+      periods.next.burdenRate = 1;
+      periods.next.remarks = '';
+      periods.next.startMonth = '';
+    }
+
+    activePeriod = 'current';
+    selectedItems = periods.current.selectedItems;
+    burdenRate = periods.current.burdenRate;
+    elements.remarksInput = null;
+
+    updateBurdenRateButtonsUI();
+    updatePeriodTabsUI();
     updateCalculator();
     updateMobileCount();
     saveSelectedItems();
