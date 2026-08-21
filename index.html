@@ -238,80 +238,8 @@ color: #374151;
 transform: translateY(-50%) scale(1.1);
 }
 
-.favorite-section {
+.period-tabs-section {
 margin-bottom: 20px;
-}
-
-.favorite-btn {
-width: 100%;
-background: white;
-color: #ec4899;
-border: 2px solid #ec4899;
-padding: 14px 20px;
-border-radius: 12px;
-cursor: pointer;
-font-weight: 600;
-font-size: 15px;
-transition: all 0.3s ease;
-box-shadow: 0 4px 16px rgba(236, 72, 153, 0.2);
-}
-
-.favorite-btn:hover {
-transform: translateY(-2px);
-box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
-background: #fdf2f8;
-}
-
-.favorite-btn:active {
-transform: translateY(0);
-}
-
-.category-filters {
-display: flex;
-flex-wrap: wrap;
-gap: 8px;
-margin-bottom: 16px;
-padding: 12px;
-background: rgba(255, 255, 255, 0.1);
-border-radius: 12px;
-}
-
-.category-filter-btn {
-background: rgba(255, 255, 255, 0.8);
-color: #374151;
-border: 2px solid transparent;
-padding: 8px 16px;
-border-radius: 8px;
-cursor: pointer;
-font-weight: 600;
-font-size: 13px;
-transition: all 0.3s ease;
-}
-
-.category-filter-btn:hover {
-background: white;
-transform: translateY(-1px);
-}
-
-.category-filter-btn.active {
-background: linear-gradient(45deg, #ec4899, #db2777);
-color: white;
-border-color: #ec4899;
-}
-
-.favorite-icon {
-cursor: pointer;
-font-size: 18px;
-transition: all 0.2s ease;
-user-select: none;
-}
-
-.favorite-icon:hover {
-transform: scale(1.2);
-}
-
-.favorite-icon.active {
-color: #ec4899;
 }
 
 .admin-panel {
@@ -1674,10 +1602,15 @@ Excelファイルをアップロード
 <button class="search-clear-btn" id="searchClearBtn">×</button>
 </div>
 
-<div class="favorite-section">
-<button class="favorite-btn" id="favoriteBtn">
-よく使用する商品
-</button>
+<div class="period-tabs-section">
+<div class="period-tabs" id="periodTabs">
+<button class="period-tab-btn active" id="periodTabCurrent" data-period="current">今月</button>
+<button class="period-tab-btn" id="periodTabNext" data-period="next">来月以降</button>
+</div>
+<div class="period-next-startmonth" id="periodNextStartMonthWrap" style="display: none;">
+<label for="periodStartMonthInput">適用開始月</label>
+<input type="month" id="periodStartMonthInput">
+</div>
 </div>
 
 <button class="mobile-toggle" id="toggleCalculator">
@@ -1694,14 +1627,6 @@ Excelファイルをアップロード
 
 <div class="calculator" id="calculator">
 <button class="close-btn" id="closeCalculator" style="display: none;">× 閉じる</button>
-<div class="period-tabs" id="periodTabs">
-<button class="period-tab-btn active" id="periodTabCurrent" data-period="current">今月</button>
-<button class="period-tab-btn" id="periodTabNext" data-period="next">来月以降</button>
-</div>
-<div class="period-next-startmonth" id="periodNextStartMonthWrap" style="display: none;">
-<label for="periodStartMonthInput">適用開始月</label>
-<input type="month" id="periodStartMonthInput">
-</div>
 <div class="calculator-title">
 <div class="burden-rate-buttons">
 <button class="burden-rate-btn active" id="burdenRate1" data-rate="1">1割</button>
@@ -1775,8 +1700,6 @@ let selectedItems = [];
 let filteredItems = [];
 let isAdminMode = false;
 let isReorderMode = false;
-let isFavoriteMode = false;
-let selectedCategory = 'all';
 let selectedLogo = 'nextus'; // デフォルトはNextus
 let burdenRate = 1; // デフォルトは1割
 
@@ -1824,8 +1747,6 @@ reorderModeBtn: document.getElementById('reorderModeBtn'),
 homeNameInput: document.getElementById('homeNameInput'),
 contractorNameInput: document.getElementById('contractorNameInput'),
 remarksInput: document.getElementById('remarksInput'),
-favoriteBtn: document.getElementById('favoriteBtn'),
-mobileFavoriteBtn: document.getElementById('mobileFavoriteBtn'),
 mobileCalculatorBtn: document.getElementById('mobileCalculatorBtn'),
 logoModal: document.getElementById('logoModal'),
 logoCancelBtn: document.getElementById('logoCancelBtn'),
@@ -2445,7 +2366,7 @@ function showHistoryMode() {
   // 全セクションを非表示
   elements.adminPanel.classList.remove('active');
   document.querySelector('.search-container').style.display = 'none';
-  document.querySelector('.favorite-section').style.display = 'none';
+  document.querySelector('.period-tabs-section').style.display = 'none';
   document.getElementById('searchResults').style.display = 'none';
   document.querySelector('.calculator').style.display = 'none';
   document.getElementById('spellSection').style.display = 'none';
@@ -2466,7 +2387,7 @@ function showSpellMode() {
   // 全セクションを非表示
   elements.adminPanel.classList.remove('active');
   document.querySelector('.search-container').style.display = 'none';
-  document.querySelector('.favorite-section').style.display = 'none';
+  document.querySelector('.period-tabs-section').style.display = 'none';
   document.getElementById('searchResults').style.display = 'none';
   document.querySelector('.calculator').style.display = 'none';
   document.getElementById('historySection').style.display = 'none';
@@ -2493,7 +2414,7 @@ function switchMode(admin) {
   
   // 検索窓とお気に入りは常に表示
   document.querySelector('.search-container').style.display = 'block';
-  document.querySelector('.favorite-section').style.display = 'block';
+  document.querySelector('.period-tabs-section').style.display = 'block';
   document.getElementById('searchResults').style.display = 'block';
   
   if (admin) {
@@ -2700,9 +2621,6 @@ showError('データの追加に失敗しました');
 elements.searchInput.addEventListener('input', (e) => {
 const query = e.target.value.trim();
 toggleClearButton(query);
-if (isFavoriteMode) {
-showAllItems();
-}
 if (query === '') {
 showEmptySearchState();
 } else {
@@ -2808,35 +2726,17 @@ displaySearchResults(filteredItems);
 }
 
 function displaySearchResults(items) {
-// お気に入りモードの場合、品目フィルターを表示
-if (isFavoriteMode) {
-const categories = ['all', ...new Set(items.map(item => item.category).filter(c => c))];
-const categoryFiltersHTML = `
-<div class="category-filters">
-${categories.map(cat => `
-<button class="category-filter-btn ${selectedCategory === cat ? 'active' : ''}" onclick="filterByCategory('${cat}')">
-${cat === 'all' ? '全て' : cat}
-</button>
-`).join('')}
-</div>
-`;
-    
-// 品目フィルター適用
-if (selectedCategory !== 'all') {
-items = items.filter(item => item.category === selectedCategory);
-}
-    
 if (items.length === 0) {
-elements.searchResults.innerHTML = categoryFiltersHTML + `
+elements.searchResults.innerHTML = `
 <div class="empty-state">
 <h3>該当する品目が見つかりません</h3>
-<p>別の品目を選択してみてください</p>
+<p>別のキーワードで検索してみてください</p>
 </div>
 `;
 return;
 }
-    
-elements.searchResults.innerHTML = categoryFiltersHTML + items.map(item => {
+
+elements.searchResults.innerHTML = items.map(item => {
 const selectedItem = selectedItems.find(selected => selected.id === item.id);
 const isSelected = !!selectedItem;
 const quantityFull = selectedItem ? (selectedItem.quantityFull || 0) : 0;
@@ -2861,62 +2761,6 @@ return `
 <div class="result-item">
 <div class="item-info">
 <div class="item-name">${item.name}</div>
-<div class="item-points">${item.points}${item.isActualCost ? '円' : '点'}/月</div>
-${categoryDisplay}
-${taisCodeDisplay}
-</div>
-<div class="item-actions">
-${addBtn}
-${adminButtons}
-</div>
-</div>
-`;
-}).join('');
-return;
-}
-
-// 通常モード
-if (items.length === 0) {
-elements.searchResults.innerHTML = `
-<div class="empty-state">
-<h3>該当する品目が見つかりません</h3>
-<p>別のキーワードで検索してみてください</p>
-</div>
-`;
-return;
-}
-
-elements.searchResults.innerHTML = items.map(item => {
-const selectedItem = selectedItems.find(selected => selected.id === item.id);
-const isSelected = !!selectedItem;
-const quantityFull = selectedItem ? (selectedItem.quantityFull || 0) : 0;
-const quantityHalf = selectedItem ? (selectedItem.quantityHalf || 0) : 0;
-const quantity = quantityFull + quantityHalf;
-
-const favoriteIcon = isAdminMode ? `
-<span class="favorite-icon ${item.isFavorite ? 'active' : ''}" onclick="toggleFavorite('${item.id}')" title="お気に入り">
-${item.isFavorite ? '♥' : '♡'}
-</span>
-` : '';
-
-const adminButtons = isAdminMode ? `
-<button class="edit-btn" onclick="editItem('${item.id}', '${item.name.replace(/'/g, "\\'")}', ${item.points}, '${(item.category || '').replace(/'/g, "\\'")}', '${(item.taisCode || '').replace(/'/g, "\\'")}', ${!!item.isActualCost})">編集</button>
-<button class="delete-btn" onclick="deleteItem('${item.id}', '${item.name.replace(/'/g, "\\'")}')">削除</button>
-` : '';
-
-const addBtn = isAdminMode ? '' : `
-<button class="add-btn" onclick="addItem('${item.id}')">
-${isSelected ? `追加済み (${quantity}個)` : '追加'}
-</button>
-`;
-
-const categoryDisplay = item.category ? `<div class="item-category">品目: ${item.category}</div>` : '';
-const taisCodeDisplay = item.taisCode ? `<div class="item-tais-code">taisコード: ${item.taisCode}</div>` : '';
-
-return `
-<div class="result-item">
-<div class="item-info">
-<div class="item-name">${favoriteIcon} ${item.name}</div>
 <div class="item-points">${item.points}${item.isActualCost ? '円' : '点'}/月</div>
 ${categoryDisplay}
 ${taisCodeDisplay}
@@ -3039,67 +2883,6 @@ function hideLoadingOverlay() {
   }
 }  
   
-// お気に入りトグル
-async function toggleFavorite(itemId) {
-const item = welfareEquipment.find(item => item.id === itemId);
-if (!item) return;
-
-const newFavoriteState = !item.isFavorite;
-
-try {
-showInfo('お気に入り設定を更新中...');
-await FirebaseDB.updateEquipment(
-item.id,
-item.name,
-item.points,
-item.category,
-item.taisCode,
-item.isActualCost,
-newFavoriteState
-);
-await FirebaseDB.bumpMetaVersion();
-await loadEquipmentData();
-performSearch(elements.searchInput.value);
-showSuccess(`"${item.name}" のお気に入り設定を${newFavoriteState ? 'ON' : 'OFF'}にしました`);
-} catch (error) {
-console.error('お気に入り設定更新エラー:', error);
-showError('お気に入り設定の更新に失敗しました');
-}
-}
-
-// お気に入り商品表示
-function showFavorites() {
-isFavoriteMode = true;
-selectedCategory = 'all';
-elements.favoriteBtn.style.background = 'linear-gradient(45deg, #ec4899, #db2777)';
-elements.favoriteBtn.style.color = 'white';
-elements.favoriteBtn.style.borderColor = '#ec4899';
-elements.favoriteBtn.textContent = 'よく使用する商品 (表示中)';
-elements.searchInput.value = '';
-toggleClearButton('');
-    
-filteredItems = welfareEquipment.filter(item => item.isFavorite);
-displaySearchResults(filteredItems);
-}
-
-// 通常表示に戻る
-function showAllItems() {
-isFavoriteMode = false;
-selectedCategory = 'all';
-elements.favoriteBtn.style.background = 'white';
-elements.favoriteBtn.style.color = '#ec4899';
-elements.favoriteBtn.style.borderColor = '#ec4899';
-elements.favoriteBtn.textContent = 'よく使用する商品';
-showEmptySearchState();
-}
-
-// 品目フィルター
-function filterByCategory(category) {
-selectedCategory = category;
-const favoriteItems = welfareEquipment.filter(item => item.isFavorite);
-displaySearchResults(favoriteItems);
-}
-
 function removeItem(itemId) {
 selectedItems = selectedItems.filter(item => item.id !== itemId);
 updateCalculator();
@@ -3567,7 +3350,7 @@ elements.clearAllTop.addEventListener('click', handleClearAll);
 // モバイル表示切り替え（計算結果を独立した画面として表示）
 elements.toggleCalculatorBtn.addEventListener('click', () => {
   document.querySelector('.search-container').style.display = 'none';
-  document.querySelector('.favorite-section').style.display = 'none';
+  document.querySelector('.period-tabs-section').style.display = 'none';
   elements.searchResults.style.display = 'none';
   elements.toggleCalculatorBtn.style.display = 'none';
 
@@ -3578,7 +3361,7 @@ elements.toggleCalculatorBtn.addEventListener('click', () => {
 
 elements.closeCalculatorBtn.addEventListener('click', () => {
   document.querySelector('.search-container').style.display = 'block';
-  document.querySelector('.favorite-section').style.display = 'block';
+  document.querySelector('.period-tabs-section').style.display = 'block';
   elements.searchResults.style.display = 'block';
   elements.toggleCalculatorBtn.style.display = 'block';
 
@@ -3587,14 +3370,6 @@ elements.closeCalculatorBtn.addEventListener('click', () => {
   elements.closeCalculatorBtn.style.display = 'none';
 });
 
-// お気に入りボタン
-elements.favoriteBtn.addEventListener('click', () => {
-if (isFavoriteMode) {
-showAllItems();
-} else {
-showFavorites();
-}
-});
 
 // 負担割合ボタンのイベントリスナー
 [elements.burdenRate1, elements.burdenRate2, elements.burdenRate3].forEach(btn => {
@@ -4271,7 +4046,7 @@ function restoreFromHistory(id) {
   // 履歴セクションを非表示、検索セクションを表示
   document.getElementById('historySection').style.display = 'none';
   document.querySelector('.search-container').style.display = 'block';
-  document.querySelector('.favorite-section').style.display = 'block';
+  document.querySelector('.period-tabs-section').style.display = 'block';
   document.getElementById('searchResults').style.display = 'block';
   
   // ドロワーメニューの状態を更新
@@ -4530,7 +4305,7 @@ async function restoreFromShareCode() {
     // 共有セクションを非表示、検索セクションを表示
     document.getElementById('spellSection').style.display = 'none';
     document.querySelector('.search-container').style.display = 'block';
-    document.querySelector('.favorite-section').style.display = 'block';
+    document.querySelector('.period-tabs-section').style.display = 'block';
     document.getElementById('searchResults').style.display = 'block';
     
     // ドロワーメニューの状態を更新
