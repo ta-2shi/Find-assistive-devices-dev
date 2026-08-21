@@ -706,6 +706,24 @@ font-size: 16px;
 background: white;
 }
 
+.copy-current-btn {
+width: 100%;
+margin-top: 8px;
+padding: 10px 12px;
+background: white;
+color: #2563eb;
+border: 2px solid #93c5fd;
+border-radius: 8px;
+cursor: pointer;
+font-weight: 600;
+font-size: 13px;
+transition: all 0.2s ease;
+}
+
+.copy-current-btn:hover {
+background: #eff6ff;
+}
+
 .burden-rate-buttons {
 display: flex;
 gap: 6px;
@@ -1611,6 +1629,7 @@ Excelファイルをアップロード
 <label for="periodStartMonthInput">適用開始月</label>
 <input type="month" id="periodStartMonthInput">
 </div>
+<button class="copy-current-btn" id="copyCurrentToNextBtn" style="display: none;">📋 今月の内容をコピー</button>
 </div>
 
 <button class="mobile-toggle" id="toggleCalculator">
@@ -2281,6 +2300,10 @@ function updatePeriodTabsUI() {
   const startMonthInput = document.getElementById('periodStartMonthInput');
   if (startMonthInput) {
     startMonthInput.value = periods.next.startMonth || '';
+  }
+  const copyBtn = document.getElementById('copyCurrentToNextBtn');
+  if (copyBtn) {
+    copyBtn.style.display = activePeriod === 'next' ? 'block' : 'none';
   }
 }
 
@@ -3395,6 +3418,42 @@ document.getElementById('periodStartMonthInput').addEventListener('change', (e) 
   periods.next.startMonth = e.target.value;
   persistPeriods();
 });
+
+// 今月の内容を来月以降へコピー
+document.getElementById('copyCurrentToNextBtn').addEventListener('click', async () => {
+  if (periods.next.selectedItems.length > 0) {
+    const confirmed = await showConfirmModal('来月以降の内容を、今月の内容で上書きします。よろしいですか？');
+    if (!confirmed) return;
+  }
+  copyCurrentPeriodToNext();
+});
+
+// 今月の品目・負担割合・備考を来月以降にコピー
+function copyCurrentPeriodToNext() {
+  // 現在表示中が今月の場合は、念のため最新の内容をperiodsへ同期
+  if (activePeriod === 'current') {
+    periods.current.selectedItems = selectedItems;
+    periods.current.burdenRate = burdenRate;
+    if (elements.remarksInput) {
+      periods.current.remarks = elements.remarksInput.value;
+    }
+  }
+
+  periods.next.selectedItems = JSON.parse(JSON.stringify(periods.current.selectedItems));
+  periods.next.burdenRate = periods.current.burdenRate;
+  periods.next.remarks = periods.current.remarks;
+
+  if (activePeriod === 'next') {
+    selectedItems = periods.next.selectedItems;
+    burdenRate = periods.next.burdenRate;
+    elements.remarksInput = null;
+    updateBurdenRateButtonsUI();
+    updateCalculator();
+    updateMobileCount();
+  }
+
+  persistPeriods();
+}
 
 // PDF印刷機能 - ロゴ選択モーダルを表示
 elements.printBtn.addEventListener('click', showLogoModal);
