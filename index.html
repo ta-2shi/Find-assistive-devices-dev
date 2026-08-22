@@ -2315,6 +2315,22 @@ function formatPeriodMonthLabel(yyyyMm) {
   return `${y}年${parseInt(m, 10)}月〜`;
 }
 
+// 「YYYY-MM」を「◯年◯月」（〜なし・単月）の表示用ラベルに変換
+function formatSingleMonthLabel(yyyyMm) {
+  if (!yyyyMm) return '';
+  const [y, m] = yyyyMm.split('-');
+  if (!y || !m) return '';
+  return `${y}年${parseInt(m, 10)}月`;
+}
+
+// 「YYYY-MM」の1ヶ月前の「YYYY-MM」を求める
+function getPreviousMonth(yyyyMm) {
+  const [y, m] = yyyyMm.split('-').map(Number);
+  if (!y || !m) return '';
+  const date = new Date(y, m - 2, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
 // 今月/来月以降タブの切り替え
 function switchPeriod(period) {
   if (period !== 'current' && period !== 'next') return;
@@ -3690,7 +3706,11 @@ function createPrintHTML(shareCode = '') {
   const nextItems = periods.next.selectedItems;
   const hasNext = nextItems.length > 0;
   const nextMonthLabel = formatPeriodMonthLabel(periods.next.startMonth);
-  const nextColumnLabel = hasNext ? (nextMonthLabel ? `来月以降分（${nextMonthLabel}）` : '来月以降分') : '来月以降分';
+  // 適用開始月が設定されていれば、表の列見出しを具体的な年月表記にする
+  const currentColumnLabel = periods.next.startMonth
+    ? formatSingleMonthLabel(getPreviousMonth(periods.next.startMonth))
+    : '今月分';
+  const nextColumnLabel = nextMonthLabel || '来月以降分';
 
   // 今月・来月以降の品目を、同じ品目は1行にまとめて1つの表にする
   const nextById = new Map(nextItems.map(item => [item.id, item]));
@@ -3871,7 +3891,7 @@ ${remarksBlockHTML}
 <th style="padding: 10px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">No.</th>
 <th style="padding: 10px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">品目</th>
 <th style="padding: 10px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">商品名</th>
-<th style="padding: 10px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">今月分</th>
+<th style="padding: 10px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">${currentColumnLabel}</th>
 <th style="padding: 10px; text-align: center; font-weight: bold;">${nextColumnLabel}</th>
 </tr>
 `;
