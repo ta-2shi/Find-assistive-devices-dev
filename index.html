@@ -2307,20 +2307,20 @@ function updatePeriodTabsUI() {
   }
 }
 
-// 「来月以降（YYYY-MM）」を「◯年◯月〜」の表示用ラベルに変換
+// 「来月以降（YYYY-MM）」を「◯月〜」の表示用ラベルに変換
 function formatPeriodMonthLabel(yyyyMm) {
   if (!yyyyMm) return '';
   const [y, m] = yyyyMm.split('-');
   if (!y || !m) return '';
-  return `${y}年${parseInt(m, 10)}月〜`;
+  return `${parseInt(m, 10)}月〜`;
 }
 
-// 「YYYY-MM」を「◯年◯月」（〜なし・単月）の表示用ラベルに変換
+// 「YYYY-MM」を「◯月」（〜なし・単月）の表示用ラベルに変換
 function formatSingleMonthLabel(yyyyMm) {
   if (!yyyyMm) return '';
   const [y, m] = yyyyMm.split('-');
   if (!y || !m) return '';
-  return `${y}年${parseInt(m, 10)}月`;
+  return `${parseInt(m, 10)}月`;
 }
 
 // 「YYYY-MM」の1ヶ月前の「YYYY-MM」を求める
