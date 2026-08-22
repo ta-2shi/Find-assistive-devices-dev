@@ -3801,31 +3801,34 @@ function createPrintHTML(shareCode = '') {
     return { normalPoints, actualCostTotal, totalAmount };
   }
 
-  function topSummaryFor(totals) {
-    if (totals.normalPoints > 0 && totals.actualCostTotal > 0) {
-      return `合計点数: ${totals.normalPoints.toLocaleString()}点 / 実費: ${totals.actualCostTotal.toLocaleString()}円`;
-    } else if (totals.normalPoints > 0) {
-      return `合計点数: ${totals.normalPoints.toLocaleString()}点`;
-    } else if (totals.actualCostTotal > 0) {
-      return `実費合計: ${totals.actualCostTotal.toLocaleString()}円`;
-    }
-    return 'なし';
-  }
-
   const burdenRateLabel = (rate) => rate === 1 ? '1割負担' : rate === 2 ? '2割負担' : '3割負担';
 
   const currentTotals = computeTotals(currentItems, periods.current.burdenRate);
   const nextTotals = hasNext ? computeTotals(nextItems, periods.next.burdenRate) : null;
 
-  const topSummaryCurrentLabel = periods.next.startMonth ? currentPeriodLabel : '今月';
-  const topSummaryNextLabel = periods.next.startMonth
-    ? `${formatSingleMonthLabel(periods.next.startMonth)}以降`
-    : '来月以降';
-
-  let topSummaryHTML = `${topSummaryCurrentLabel}: ${topSummaryFor(currentTotals)}`;
-  if (hasNext) {
-    topSummaryHTML += ` ／ ${topSummaryNextLabel}: ${topSummaryFor(nextTotals)}`;
+  // 期間ごとの実費・合計点数を並べたブロックを1つ生成
+  function periodSummaryBlockHTML(label, totals) {
+    const lines = [];
+    if (totals.actualCostTotal > 0) {
+      lines.push(`<div>実費：${totals.actualCostTotal.toLocaleString()}円</div>`);
+    }
+    if (totals.normalPoints > 0) {
+      lines.push(`<div>合計点数：${totals.normalPoints.toLocaleString()}点</div>`);
+    }
+    return `
+<div style="text-align: left;">
+<div style="font-weight: 700; margin-bottom: 2px;">${label}</div>
+${lines.join('')}
+</div>
+`;
   }
+
+  let topSummaryHTML = `
+<div style="display: flex; gap: 24px; justify-content: flex-end;">
+${periodSummaryBlockHTML(currentPeriodLabel, currentTotals)}
+${hasNext ? periodSummaryBlockHTML(nextPeriodLabel, nextTotals) : ''}
+</div>
+`;
 
   // 備考（今月・来月以降）
   const currentRemarksText = (periods.current.remarks || '').trim();
