@@ -3673,246 +3673,7 @@ async function generatePDF() {
 
 // 印刷用HTML作成関数
 // 1期間分（今月 または 来月以降）の帳票ページHTMLを生成
-function buildPeriodPagesHTML({ items, burdenRate, remarks, titleSuffix, shareCode, homeName, contractorName, currentDate }) {
-
-// 通常の点数計算（実費以外）
-const normalPoints = items
-  .filter(item => !item.isActualCost)
-  .reduce((sum, item) => {
-    const quantityFull = item.quantityFull || 0;
-    const quantityHalf = item.quantityHalf || 0;
-    const fullTotal = item.points * quantityFull;
-    const halfTotal = (item.points / 2) * quantityHalf;
-    return sum + fullTotal + halfTotal;
-  }, 0);
-
-// 実費の合計計算
-const actualCostTotal = items
-  .filter(item => item.isActualCost)
-  .reduce((sum, item) => {
-    const quantityFull = item.quantityFull || 0;
-    const quantityHalf = item.quantityHalf || 0;
-    const fullTotal = item.points * quantityFull;
-    const halfTotal = (item.points / 2) * quantityHalf;
-    return sum + fullTotal + halfTotal;
-  }, 0);
-
-// 総合計（負担割合を適用）
-const totalAmount = (normalPoints * burdenRate) + actualCostTotal;
-
-// 右上の合計表示（点数と実費を分けて表示）
-let topSummaryHTML = '';
-if (normalPoints > 0 && actualCostTotal > 0) {
-topSummaryHTML = `合計点数: ${normalPoints.toLocaleString()}点 / 実費: ${actualCostTotal.toLocaleString()}円`;
-} else if (normalPoints > 0) {
-topSummaryHTML = `合計点数: ${normalPoints.toLocaleString()}点`;
-} else if (actualCostTotal > 0) {
-topSummaryHTML = `実費合計: ${actualCostTotal.toLocaleString()}円`;
-}
-
-// 11件以下の場合は1ページ、11件超の場合は2ページに分割
-const itemsPerPage = 10;
-const needsSecondPage = items.length > itemsPerPage;
-
-// 1ページ目の品目
-const page1Items = items.slice(0, itemsPerPage);
-// 2ページ目の品目
-const page2Items = needsSecondPage ? items.slice(itemsPerPage) : [];
-
-// 品目HTMLを生成する関数
-function generateItemsHTML(items, startIndex = 0) {
-  return items.map((item, index) => {
-    // 新形式の計算
-    const quantityFull = item.quantityFull || 0;
-    const quantityHalf = item.quantityHalf || 0;
-    const fullTotal = item.points * quantityFull;
-    const halfTotal = (item.points / 2) * quantityHalf;
-    const displayTotal = fullTotal + halfTotal;
-    
-    const categoryDisplay = item.category ? item.category : '';
-    const taisDisplay = (!item.isActualCost && item.taisCode) ? `<div style="color: #d97706; font-size: 12px; margin-top: 5px;">taisコード: ${item.taisCode}</div>` : '';
-    const actualCostLabel = item.isActualCost ? `<div style="color: #dc2626; font-size: 11px; font-weight: 600; margin-top: 3px;">実費対象</div>` : '';
-    const unit = item.isActualCost ? '円' : '点';
-    
-    // 数量の内訳表示
-    let quantityDisplay = '';
-    if (quantityFull > 0 && quantityHalf > 0) {
-      quantityDisplay = `${quantityFull + quantityHalf}<br><span style="font-size: 10px; color: #6b7280;">(月額${quantityFull} + 半月${quantityHalf})</span>`;
-    } else if (quantityFull > 0) {
-      quantityDisplay = `${quantityFull}`;
-    } else if (quantityHalf > 0) {
-      quantityDisplay = `${quantityHalf}<br><span style="font-size: 10px; color: #f59e0b;">(半月)</span>`;
-    } else {
-      quantityDisplay = '0';
-    }
-    
-    return `
-      <tr style="border-bottom: 1px solid #e5e7eb;">
-        <td style="padding: 8px; text-align: center; border-right: 1px solid #e5e7eb;">${startIndex + index + 1}</td>
-        <td style="padding: 12px; border-right: 1px solid #e5e7eb;">
-          <div style="font-weight: 600;">${categoryDisplay}</div>
-        </td>
-        <td style="padding: 12px; border-right: 1px solid #e5e7eb;">
-          <div style="font-weight: 600; margin-bottom: 5px;">${item.name}</div>
-          ${taisDisplay}
-          ${actualCostLabel}
-        </td>
-        <td style="padding: 12px; text-align: center; border-right: 1px solid #e5e7eb;">${item.points}${unit}</td>
-        <td style="padding: 12px; text-align: center; border-right: 1px solid #e5e7eb;">${quantityDisplay}</td>
-        <td style="padding: 12px; text-align: center; font-weight: 600;">${displayTotal}${unit}</td>
-      </tr>
-    `;
-  }).join('');
-}
-// 備考欄の取得
-const remarksText = (remarks || '').trim();
-
-// 負担割合の表示
-const burdenRateText = burdenRate === 1 ? '1割負担' : burdenRate === 2 ? '2割負担' : '3割負担';
-
-// 署名欄と文言のHTML
-const signatureAndFooter = `
-<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #374151;">
-<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 30px;">
-<div style="flex: 1; max-width: 400px;">
-${remarksText ? `
-<div style="margin-bottom: 20px;">
-<div style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px;">備考</div>
-<div style="padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; color: #374151; white-space: pre-wrap; line-height: 1.6; min-height: 80px;">${remarksText}</div>
-</div>
-` : ''}
-<div style="font-size: 8px; color: #9ca3af; line-height: 1.5;">
-<div>この度、搬入させていただいた福祉用具の種別、及び点数の内訳を記載させていただきました。</div>
-<div>尚、ご不明な点がございましたら、大変お手数かとは存じますがご連絡の程、よろしくお願い申し上げます。</div>
-<div>※負担額は利用付の負担割合により異なります。</div>
-</div>
-</div>
-<div style="text-align: right;">
-<div style="display: flex; align-items: center; justify-content: flex-end; gap: 20px; margin-bottom: 30px;">
-<div style="font-size: 14px; font-weight: 600; color: #dc2626;">${burdenRateText}</div>
-<div style="font-size: 18px; font-weight: bold; color: #1e293b;">
-総合計: ${totalAmount.toLocaleString()}円
-</div>
-</div>
-<div style="font-size: 14px; color: #374151; line-height: 2;">
-<div style="margin-bottom: 10px;">
-利用者署名　<span style="display: inline-block; border-bottom: 1px solid #374151; width: 300px; margin-left: 10px;"></span>
-</div>
-<div>
-代筆者名　　<span style="display: inline-block; border-bottom: 1px solid #374151; width: 300px; margin-left: 10px;"></span>
-</div>
-</div>
-</div>
-</div>
-</div>
-`;
-
-// ロゴHTML
-const logoHTML = logoData[selectedLogo] ? `
-<img src="${logoData[selectedLogo]}" alt="Company Logo" style="max-width: 200px; max-height: 80px; object-fit: contain;">
-` : '';
-
-// 1ページ目のHTML
-let page1HTML = `
-<div class="pdf-page" style="max-width: 714px; margin: 0 auto; background: white; page-break-after: always;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-<div style="flex: 1;"></div>
-<h1 style="flex: 2; text-align: center; font-size: 22px; font-weight: bold; color: #1e293b; margin: 0;">福祉用具レンタル搬入完了書${titleSuffix}</h1>
-<div style="flex: 1; text-align: right;">
-${logoHTML}
-</div>
-</div>
-
-<div style="margin-bottom: 12px; font-size: 13px; color: #374151; display: flex; justify-content: space-between; align-items: center;">
-<div>事業所名　${homeName}　様</div>
-<div>契約者　${contractorName}　様</div>
-</div>
-
-<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; color: #6b7280;">
-<div>作成日: ${currentDate}</div>
-<div style="font-weight: 600; color: #2563eb;">${topSummaryHTML}</div>
-</div>
-
-<div style="text-align: center; margin-bottom: 12px; font-size: 13px; color: #374151;">
-担当：<span style="display: inline-block; border-bottom: 1px solid #374151; min-width: 200px; padding: 0 10px; font-weight: 600;">${currentSalesPerson || '　　　　　　　　'}</span>
-</div>
-
-<table style="width: 100%; border-collapse: collapse; border: 2px solid #374151; font-size: 13px;">
-<thead>
-<tr style="background: #f8fafc; border-bottom: 2px solid #374151;">
-<th style="padding: 12px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">No.</th>
-<th style="padding: 12px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">品目</th>
-<th style="padding: 12px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">商品名</th>
-<th style="padding: 12px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">単価</th>
-<th style="padding: 12px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">数量</th>
-<th style="padding: 12px; text-align: center; font-weight: bold;">合計</th>
-</tr>
-</thead>
-<tbody>
-${generateItemsHTML(page1Items, 0)}
-</tbody>
-</table>
-`;
-
-// 11件以下の場合は1ページ目に署名欄と文言を追加
-if (!needsSecondPage) {
-  // 共有コード表示を追加
-  if (shareCode) {
-    page1HTML += `
-<div style="position: absolute; bottom: 10px; right: 20px; font-size: 10px; color: #000; font-weight: 600;">
-${shareCode}
-</div>
-`;
-  }
-page1HTML += signatureAndFooter;
-}
-
-page1HTML += `</div>`;
-
-// 2ページ目が必要な場合
-let page2HTML = '';
-if (needsSecondPage) {
-page2HTML = `
-<div class="pdf-page" style="max-width: 714px; margin: 0 auto; background: white; margin-top: 100px;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-<div style="flex: 1;"></div>
-<h1 style="flex: 2; text-align: center; font-size: 24px; font-weight: bold; color: #1e293b; margin: 0;">福祉用具レンタル搬入完了書${titleSuffix}（2枚目）</h1>
-<div style="flex: 1; text-align: right;">
-${logoHTML}
-</div>
-</div>
-
-<table style="width: 100%; border-collapse: collapse; border: 2px solid #374151; font-size: 14px;">
-<thead>
-<tr style="background: #f8fafc; border-bottom: 2px solid #374151;">
-<th style="padding: 8px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">No.</th>
-<th style="padding: 12px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">品目</th>
-<th style="padding: 12px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">商品名</th>
-<th style="padding: 12px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">単価</th>
-<th style="padding: 12px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">数量</th>
-<th style="padding: 12px; text-align: center; font-weight: bold;">合計</th>
-</tr>
-</thead>
-<tbody>
-${generateItemsHTML(page2Items, itemsPerPage)}
-</tbody>
-</table>
-
-${shareCode ? `
-<div style="position: absolute; bottom: 10px; right: 20px; font-size: 10px; color: #000; font-weight: 600;">
-${shareCode}
-</div>
-` : ''}
-
-${signatureAndFooter}
-</div>
-`;
-}
-
-return page1HTML + page2HTML;
-}
-
-// 今月・来月以降（変更後）をまとめた帳票HTMLを生成
+// 今月・来月以降の品目を1つの表にまとめた帳票HTMLを生成
 function createPrintHTML(shareCode = '') {
   const currentDate = new Date().toLocaleDateString('ja-JP');
   const homeName = elements.homeNameInput.value.trim() || '＿＿＿＿＿＿＿＿＿＿＿＿';
@@ -3925,32 +3686,286 @@ function createPrintHTML(shareCode = '') {
     periods[activePeriod].remarks = elements.remarksInput.value;
   }
 
-  let html = buildPeriodPagesHTML({
-    items: periods.current.selectedItems,
-    burdenRate: periods.current.burdenRate,
-    remarks: periods.current.remarks,
-    titleSuffix: '（今月分）',
-    shareCode,
-    homeName,
-    contractorName,
-    currentDate
+  const currentItems = periods.current.selectedItems;
+  const nextItems = periods.next.selectedItems;
+  const hasNext = nextItems.length > 0;
+  const nextMonthLabel = formatPeriodMonthLabel(periods.next.startMonth);
+  const nextColumnLabel = hasNext ? (nextMonthLabel ? `来月以降分（${nextMonthLabel}）` : '来月以降分') : '来月以降分';
+
+  // 今月・来月以降の品目を、同じ品目は1行にまとめて1つの表にする
+  const nextById = new Map(nextItems.map(item => [item.id, item]));
+  const seen = new Set();
+  const rows = [];
+  currentItems.forEach(item => {
+    rows.push({ base: item, current: item, next: nextById.get(item.id) || null });
+    seen.add(item.id);
+  });
+  nextItems.forEach(item => {
+    if (!seen.has(item.id)) {
+      rows.push({ base: item, current: null, next: item });
+    }
   });
 
-  if (periods.next.selectedItems.length > 0) {
-    const monthLabel = formatPeriodMonthLabel(periods.next.startMonth);
-    html += buildPeriodPagesHTML({
-      items: periods.next.selectedItems,
-      burdenRate: periods.next.burdenRate,
-      remarks: periods.next.remarks,
-      titleSuffix: monthLabel ? `（${monthLabel}変更後）` : '（来月以降分・変更後）',
-      shareCode: '',
-      homeName,
-      contractorName,
-      currentDate
-    });
+  // 期間ごとのセル（数量・金額）のHTML
+  function periodCellHTML(item, unit) {
+    if (!item) return '<span style="color: #9ca3af;">－</span>';
+    const quantityFull = item.quantityFull || 0;
+    const quantityHalf = item.quantityHalf || 0;
+    const fullTotal = item.points * quantityFull;
+    const halfTotal = (item.points / 2) * quantityHalf;
+    const displayTotal = fullTotal + halfTotal;
+
+    let quantityText;
+    if (quantityFull > 0 && quantityHalf > 0) {
+      quantityText = `${quantityFull + quantityHalf}個(月額${quantityFull}+半月${quantityHalf})`;
+    } else if (quantityFull > 0) {
+      quantityText = `${quantityFull}個`;
+    } else if (quantityHalf > 0) {
+      quantityText = `${quantityHalf}個(半月)`;
+    } else {
+      quantityText = '0個';
+    }
+
+    return `${quantityText}<br><span style="font-weight: 600;">${displayTotal.toLocaleString()}${unit}</span>`;
   }
 
-  return html;
+  // 品目一覧のHTMLを生成する関数
+  function generateRowsHTML(rowsSlice, startIndex) {
+    return rowsSlice.map((row, index) => {
+      const item = row.base;
+      const unit = item.isActualCost ? '円' : '点';
+      const categoryDisplay = item.category ? item.category : '';
+      const taisDisplay = (!item.isActualCost && item.taisCode) ? `<div style="color: #d97706; font-size: 11px; margin-top: 4px;">taisコード: ${item.taisCode}</div>` : '';
+      const actualCostLabel = item.isActualCost ? `<div style="color: #dc2626; font-size: 10px; font-weight: 600; margin-top: 3px;">実費対象</div>` : '';
+
+      return `
+        <tr style="border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 8px; text-align: center; border-right: 1px solid #e5e7eb;">${startIndex + index + 1}</td>
+          <td style="padding: 10px; border-right: 1px solid #e5e7eb;">
+            <div style="font-weight: 600;">${categoryDisplay}</div>
+          </td>
+          <td style="padding: 10px; border-right: 1px solid #e5e7eb;">
+            <div style="font-weight: 600; margin-bottom: 4px;">${item.name}</div>
+            ${taisDisplay}
+            ${actualCostLabel}
+          </td>
+          <td style="padding: 10px; text-align: center; border-right: 1px solid #e5e7eb;">${periodCellHTML(row.current, unit)}</td>
+          <td style="padding: 10px; text-align: center;">${periodCellHTML(row.next, unit)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // 期間ごとの合計を計算
+  function computeTotals(items, itemsBurdenRate) {
+    const normalPoints = items
+      .filter(item => !item.isActualCost)
+      .reduce((sum, item) => {
+        const quantityFull = item.quantityFull || 0;
+        const quantityHalf = item.quantityHalf || 0;
+        return sum + item.points * quantityFull + (item.points / 2) * quantityHalf;
+      }, 0);
+    const actualCostTotal = items
+      .filter(item => item.isActualCost)
+      .reduce((sum, item) => {
+        const quantityFull = item.quantityFull || 0;
+        const quantityHalf = item.quantityHalf || 0;
+        return sum + item.points * quantityFull + (item.points / 2) * quantityHalf;
+      }, 0);
+    const totalAmount = (normalPoints * itemsBurdenRate) + actualCostTotal;
+    return { normalPoints, actualCostTotal, totalAmount };
+  }
+
+  function topSummaryFor(totals) {
+    if (totals.normalPoints > 0 && totals.actualCostTotal > 0) {
+      return `合計点数: ${totals.normalPoints.toLocaleString()}点 / 実費: ${totals.actualCostTotal.toLocaleString()}円`;
+    } else if (totals.normalPoints > 0) {
+      return `合計点数: ${totals.normalPoints.toLocaleString()}点`;
+    } else if (totals.actualCostTotal > 0) {
+      return `実費合計: ${totals.actualCostTotal.toLocaleString()}円`;
+    }
+    return 'なし';
+  }
+
+  const burdenRateLabel = (rate) => rate === 1 ? '1割負担' : rate === 2 ? '2割負担' : '3割負担';
+
+  const currentTotals = computeTotals(currentItems, periods.current.burdenRate);
+  const nextTotals = hasNext ? computeTotals(nextItems, periods.next.burdenRate) : null;
+
+  let topSummaryHTML = `今月: ${topSummaryFor(currentTotals)}`;
+  if (hasNext) {
+    topSummaryHTML += ` ／ 来月以降: ${topSummaryFor(nextTotals)}`;
+  }
+
+  // 備考（今月・来月以降）
+  const currentRemarksText = (periods.current.remarks || '').trim();
+  const nextRemarksText = (periods.next.remarks || '').trim();
+
+  const remarksBlockHTML = (currentRemarksText || nextRemarksText) ? `
+<div style="margin-bottom: 20px;">
+${currentRemarksText ? `
+<div style="margin-bottom: 10px;">
+<div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">備考（今月）</div>
+<div style="padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 12px; color: #374151; white-space: pre-wrap; line-height: 1.5;">${currentRemarksText}</div>
+</div>
+` : ''}
+${nextRemarksText ? `
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px;">備考（来月以降）</div>
+<div style="padding: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 12px; color: #374151; white-space: pre-wrap; line-height: 1.5;">${nextRemarksText}</div>
+</div>
+` : ''}
+</div>
+` : '';
+
+  // 合計欄（今月・来月以降を並べて表示）
+  const totalsBlockHTML = `
+<div style="display: flex; gap: 16px; justify-content: flex-end; margin-bottom: 20px;">
+<div style="text-align: center; padding: 10px 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
+<div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">今月（${burdenRateLabel(periods.current.burdenRate)}）</div>
+<div style="font-size: 16px; font-weight: bold; color: #1e293b;">${currentTotals.totalAmount.toLocaleString()}円</div>
+</div>
+${hasNext ? `
+<div style="text-align: center; padding: 10px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;">
+<div style="font-size: 12px; color: #1e40af; margin-bottom: 4px;">来月以降${nextMonthLabel ? `（${nextMonthLabel}・${burdenRateLabel(periods.next.burdenRate)}）` : `（${burdenRateLabel(periods.next.burdenRate)}）`}</div>
+<div style="font-size: 16px; font-weight: bold; color: #1e40af;">${nextTotals.totalAmount.toLocaleString()}円</div>
+</div>
+` : ''}
+</div>
+`;
+
+  // 署名欄と文言のHTML
+  const signatureAndFooter = `
+<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #374151;">
+${totalsBlockHTML}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 30px;">
+<div style="flex: 1; max-width: 420px;">
+${remarksBlockHTML}
+<div style="font-size: 8px; color: #9ca3af; line-height: 1.5;">
+<div>この度、搬入させていただいた福祉用具の種別、及び点数の内訳を記載させていただきました。</div>
+<div>尚、ご不明な点がございましたら、大変お手数かとは存じますがご連絡の程、よろしくお願い申し上げます。</div>
+<div>※負担額は利用者の負担割合により異なります。</div>
+</div>
+</div>
+<div style="text-align: right;">
+<div style="font-size: 14px; color: #374151; line-height: 2;">
+<div style="margin-bottom: 10px;">
+利用者署名　<span style="display: inline-block; border-bottom: 1px solid #374151; width: 260px; margin-left: 10px;"></span>
+</div>
+<div>
+代筆者名　　<span style="display: inline-block; border-bottom: 1px solid #374151; width: 260px; margin-left: 10px;"></span>
+</div>
+</div>
+</div>
+</div>
+</div>
+`;
+
+  // ロゴHTML
+  const logoHTML = logoData[selectedLogo] ? `
+<img src="${logoData[selectedLogo]}" alt="Company Logo" style="max-width: 200px; max-height: 80px; object-fit: contain;">
+` : '';
+
+  const tableHeaderHTML = `
+<tr style="background: #f8fafc; border-bottom: 2px solid #374151;">
+<th style="padding: 10px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">No.</th>
+<th style="padding: 10px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">品目</th>
+<th style="padding: 10px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">商品名</th>
+<th style="padding: 10px; text-align: center; border-right: 1px solid #374151; font-weight: bold;">今月分</th>
+<th style="padding: 10px; text-align: center; font-weight: bold;">${nextColumnLabel}</th>
+</tr>
+`;
+
+  // 11件以下の場合は1ページ、11件超の場合は2ページに分割
+  const itemsPerPage = 10;
+  const needsSecondPage = rows.length > itemsPerPage;
+  const page1Rows = rows.slice(0, itemsPerPage);
+  const page2Rows = needsSecondPage ? rows.slice(itemsPerPage) : [];
+
+  // 1ページ目のHTML
+  let page1HTML = `
+<div class="pdf-page" style="max-width: 714px; margin: 0 auto; background: white; page-break-after: always;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+<div style="flex: 1;"></div>
+<h1 style="flex: 2; text-align: center; font-size: 22px; font-weight: bold; color: #1e293b; margin: 0;">福祉用具レンタル搬入完了書</h1>
+<div style="flex: 1; text-align: right;">
+${logoHTML}
+</div>
+</div>
+
+<div style="margin-bottom: 12px; font-size: 13px; color: #374151; display: flex; justify-content: space-between; align-items: center;">
+<div>事業所名　${homeName}　様</div>
+<div>契約者　${contractorName}　様</div>
+</div>
+
+<div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; color: #6b7280;">
+<div>作成日: ${currentDate}</div>
+<div style="font-weight: 600; color: #2563eb;">${topSummaryHTML}</div>
+</div>
+
+<div style="text-align: center; margin-bottom: 12px; font-size: 13px; color: #374151;">
+担当：<span style="display: inline-block; border-bottom: 1px solid #374151; min-width: 200px; padding: 0 10px; font-weight: 600;">${currentSalesPerson || '　　　　　　　　'}</span>
+</div>
+
+<table style="width: 100%; border-collapse: collapse; border: 2px solid #374151; font-size: 12px;">
+<thead>
+${tableHeaderHTML}
+</thead>
+<tbody>
+${generateRowsHTML(page1Rows, 0)}
+</tbody>
+</table>
+`;
+
+  // 11件以下の場合は1ページ目に署名欄と文言を追加
+  if (!needsSecondPage) {
+    // 共有コード表示を追加
+    if (shareCode) {
+      page1HTML += `
+<div style="position: absolute; bottom: 10px; right: 20px; font-size: 10px; color: #000; font-weight: 600;">
+${shareCode}
+</div>
+`;
+    }
+    page1HTML += signatureAndFooter;
+  }
+
+  page1HTML += `</div>`;
+
+  // 2ページ目が必要な場合
+  let page2HTML = '';
+  if (needsSecondPage) {
+    page2HTML = `
+<div class="pdf-page" style="max-width: 714px; margin: 0 auto; background: white; margin-top: 100px;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+<div style="flex: 1;"></div>
+<h1 style="flex: 2; text-align: center; font-size: 24px; font-weight: bold; color: #1e293b; margin: 0;">福祉用具レンタル搬入完了書（2枚目）</h1>
+<div style="flex: 1; text-align: right;">
+${logoHTML}
+</div>
+</div>
+
+<table style="width: 100%; border-collapse: collapse; border: 2px solid #374151; font-size: 13px;">
+<thead>
+${tableHeaderHTML}
+</thead>
+<tbody>
+${generateRowsHTML(page2Rows, itemsPerPage)}
+</tbody>
+</table>
+
+${shareCode ? `
+<div style="position: absolute; bottom: 10px; right: 20px; font-size: 10px; color: #000; font-weight: 600;">
+${shareCode}
+</div>
+` : ''}
+
+${signatureAndFooter}
+</div>
+`;
+  }
+
+  return page1HTML + page2HTML;
 }
 
 // 状態表示関数
