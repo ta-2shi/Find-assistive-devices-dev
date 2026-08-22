@@ -3717,13 +3717,13 @@ function createPrintHTML(shareCode = '') {
 
     let quantityText;
     if (quantityFull > 0 && quantityHalf > 0) {
-      quantityText = `${quantityFull + quantityHalf}個(月額${quantityFull}+半月${quantityHalf})`;
+      quantityText = `数量：${quantityFull + quantityHalf}(月額${quantityFull}+半月${quantityHalf})`;
     } else if (quantityFull > 0) {
-      quantityText = `${quantityFull}個`;
+      quantityText = `数量：${quantityFull}`;
     } else if (quantityHalf > 0) {
-      quantityText = `${quantityHalf}個(半月)`;
+      quantityText = `数量：${quantityHalf}(半月)`;
     } else {
-      quantityText = '0個';
+      quantityText = '数量：0';
     }
 
     return `${quantityText}<br><span style="font-weight: 600;">${displayTotal.toLocaleString()}${unit}</span>`;
