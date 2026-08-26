@@ -3853,14 +3853,14 @@ ${nextRemarksText ? `
 
   // 合計欄（今月・来月以降を並べて表示）
   const totalsBlockHTML = `
-<div style="display: flex; gap: 16px; justify-content: flex-end; margin-bottom: 8px;">
-<div style="text-align: center; padding: 10px 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
-<div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">${currentPeriodLabel}（${burdenRateLabel(periods.current.burdenRate)}）</div>
+<div style="display: flex; gap: 16px; justify-content: flex-end; margin-bottom: 2px;">
+<div style="text-align: center; padding: 6px 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
+<div style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">${currentPeriodLabel}（${burdenRateLabel(periods.current.burdenRate)}）</div>
 <div style="font-size: 16px; font-weight: bold; color: #1e293b;">${currentTotals.totalAmount.toLocaleString()}円</div>
 </div>
 ${hasNext ? `
-<div style="text-align: center; padding: 10px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;">
-<div style="font-size: 12px; color: #1e40af; margin-bottom: 4px;">${nextPeriodLabel}（${burdenRateLabel(periods.next.burdenRate)}）</div>
+<div style="text-align: center; padding: 6px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;">
+<div style="font-size: 12px; color: #1e40af; margin-bottom: 2px;">${nextPeriodLabel}（${burdenRateLabel(periods.next.burdenRate)}）</div>
 <div style="font-size: 16px; font-weight: bold; color: #1e40af;">${nextTotals.totalAmount.toLocaleString()}円</div>
 </div>
 ` : ''}
@@ -3869,8 +3869,8 @@ ${hasNext ? `
 
   // 署名欄と文言のHTML
   const signatureAndFooter = `
-<div style="margin-top: 12px; padding-top: 12px; border-top: 2px solid #374151;">
-<div style="text-align: right; font-size: 12px; font-weight: 600; color: #2563eb; margin-bottom: 6px;">${topSummaryHTML}</div>
+<div style="margin-top: 6px; padding-top: 6px; border-top: 2px solid #374151;">
+<div style="text-align: right; font-size: 12px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">${topSummaryHTML}</div>
 ${totalsBlockHTML}
 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 30px;">
 <div style="flex: 1; max-width: 420px;">
