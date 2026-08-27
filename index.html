@@ -3288,7 +3288,12 @@ reorderSelectedItems(fromIndex, toIndex);
 }
 
 // 確認モーダルを表示し、結果をPromiseで返す（confirm()の代替）
-function showConfirmModal(message) {
+function showConfirmModal(message, options = {}) {
+  const {
+    confirmText = '削除',
+    confirmColor = 'linear-gradient(45deg, #ef4444, #dc2626)'
+  } = options;
+
   return new Promise((resolve) => {
     const modal = document.getElementById('confirmDeleteModal');
     const messageEl = document.getElementById('confirmDeleteMessage');
@@ -3296,6 +3301,8 @@ function showConfirmModal(message) {
     const cancelBtn = document.getElementById('cancelDeleteBtn');
 
     messageEl.textContent = message;
+    confirmBtn.textContent = confirmText;
+    confirmBtn.style.background = confirmColor;
     modal.classList.add('active');
 
     const cleanup = () => {
@@ -3438,7 +3445,10 @@ document.getElementById('periodStartMonthInput').addEventListener('change', (e) 
 // 今月の内容を来月以降へコピー
 document.getElementById('copyCurrentToNextBtn').addEventListener('click', async () => {
   if (periods.next.selectedItems.length > 0) {
-    const confirmed = await showConfirmModal('来月以降の内容を、今月の内容で上書きします。よろしいですか？');
+    const confirmed = await showConfirmModal('来月以降の内容を、今月の内容で上書きします。よろしいですか？', {
+      confirmText: 'OK',
+      confirmColor: 'linear-gradient(45deg, #2563eb, #1d4ed8)'
+    });
     if (!confirmed) return;
   }
   copyCurrentPeriodToNext();
