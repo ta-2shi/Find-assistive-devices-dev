@@ -3337,23 +3337,28 @@ function handleClearAll() {
   const handleConfirm = () => {
     // まず選択アイテムをクリア
     selectedItems = [];
-    
+    periods[activePeriod].remarks = '';
+    if (activePeriod === 'next') {
+      periods.next.startMonth = '';
+    }
+
     // sessionStorageを完全にクリア
     sessionStorage.removeItem('homeName');
     sessionStorage.removeItem('contractorName');
     sessionStorage.removeItem('remarksText');
     sessionStorage.removeItem('selectedWelfareItems');
-    
+
     // クリア済みフラグを立てる
     sessionStorage.setItem('inputCleared', 'true');
-    
+
     // 全品半月チェックボックスをOFFに
     const allHalfMonthCheckbox = document.getElementById('allHalfMonthCheckbox');
     if (allHalfMonthCheckbox) {
       allHalfMonthCheckbox.checked = false;
     }
-    
+
     // 画面を更新
+    updatePeriodTabsUI();
     updateCalculator();
     updateMobileCount();
     saveSelectedItems();
