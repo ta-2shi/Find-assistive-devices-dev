@@ -3319,7 +3319,9 @@ function showConfirmModal(message, options = {}) {
 }
 
 function handleClearAll() {
-  if (selectedItems.length === 0) {
+  // 来月以降タブでは、品目が0件でも適用開始月が入力されていればクリア対象とする
+  const hasStartMonthToClear = activePeriod === 'next' && !!periods.next.startMonth;
+  if (selectedItems.length === 0 && !hasStartMonthToClear) {
     alert('削除する品目がありません。');
     return;
   }
@@ -3330,7 +3332,9 @@ function handleClearAll() {
   const cancelBtn = document.getElementById('cancelDeleteBtn');
 
   // モーダルを表示
-  document.getElementById('confirmDeleteMessage').textContent = '選択した品目を全て削除しますか？';
+  document.getElementById('confirmDeleteMessage').textContent = selectedItems.length === 0
+    ? '適用開始月をクリアしますか？'
+    : '選択した品目を全て削除しますか？';
   modal.classList.add('active');
   
 // 削除ボタンのイベント（一度だけ実行）
